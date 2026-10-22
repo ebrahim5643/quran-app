@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#303f9f">
+<title>Quran Reader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#161d20;--bar:#303f9f;--btn:#c3c5c4;--btnTxt:#0b1405;--item:#37474f;--txt:#ffffff;--sub:#b0bec5;--hl:#ffd54f;--card:#263238;--gold:#d4a73c;--line:#455a64}
+body.light{--bg:#f6f2e7;--btn:#d9d6cc;--btnTxt:#111;--item:#e6e1d2;--txt:#1b1b1b;--sub:#5b5b5b;--card:#fffdf6;--line:#cfc8b4}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--txt);font-family:Roboto,"Noto Sans Bengali",system-ui,sans-serif;overflow:hidden}
+#app{height:100%;display:flex;flex-direction:column}
+#bar{background:var(--bar);color:#fff;display:flex;align-items:center;min-height:52px;padding:0 6px;flex:none}
+#bar button{background:none;border:0;color:#fff;font-size:26px;width:44px;height:44px}
+#bar h1{flex:1;text-align:center;font-size:20px;margin:0;font-weight:600}
+#bar .sp{width:44px}
+#view{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.ar{font-family:"Amiri Quran","Scheherazade New","Noto Naskh Arabic","Droid Naskh Shaping","Traditional Arabic",serif}
+
+
+/* ===== Hafezi style page ===== */
+#view.paper{background:#fff;color:#000}
+.hf{padding:6px 8px 2px;--L:40px}
+.hf-top{display:flex;justify-content:space-between;align-items:center;height:26px;font-size:17px;padding:0 4px;direction:ltr;color:#000}
+.hf-top b{font-size:15px;font-weight:600;color:#444;font-family:Roboto,sans-serif}
+.hf-foot{height:24px;line-height:24px;text-align:center;font-size:17px;color:#000;margin-top:2px}
+.hf-frame{padding:13px;background:#fff url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2713%27%20height%3D%2713%27%3E%3Crect%20width%3D%2713%27%20height%3D%2713%27%20fill%3D%27white%27%2F%3E%3Cpolygon%20points%3D%276.5%2C0.4%208.1%2C4.9%2012.6%2C6.5%208.1%2C8.1%206.5%2C12.6%204.9%2C8.1%200.4%2C6.5%204.9%2C4.9%27%20fill%3D%27black%27%2F%3E%3Ccircle%20cx%3D%276.5%27%20cy%3D%276.5%27%20r%3D%271.3%27%20fill%3D%27white%27%2F%3E%3C%2Fsvg%3E") repeat;background-size:13px 13px;border:1px solid #000}
+.hf-in{background:#fff;border:1.5px solid #000;padding:0 5px;overflow:hidden}
+.hf-text{direction:rtl;text-align:justify;text-justify:inter-word;color:#000;-webkit-text-stroke:.35px #000;background-image:linear-gradient(to bottom,transparent calc(var(--L) - 1px),#222 calc(var(--L) - 1px));background-size:100% var(--L);background-repeat:repeat-y}
+.hf-text.lj{text-align-last:justify}
+.hf-text .hfh{display:block;height:var(--L);padding:4px 0;-webkit-text-stroke:0}
+.hf-text .hfh span{display:flex;align-items:center;justify-content:center;height:100%;line-height:1;background:#fff;border:1.5px solid #000;outline:1px solid #000;outline-offset:2px;border-radius:4px}
+.hf-text .hfb{text-align-last:center;display:block;height:var(--L);line-height:var(--L);text-align:center;-webkit-text-stroke:.2px #000}
+.hf-text .num{color:#000;display:inline-block;width:1.5em;height:1.5em;line-height:1.5em;border:1.2px solid #000;border-radius:50%;text-align:center;font-size:.55em;margin:0 .35em;vertical-align:middle;-webkit-text-stroke:0;font-family:Roboto,sans-serif}
+.hf-text .ay.focus{background:rgba(255,213,79,.55)}
+
+/* splash & loader */
+.center{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+.splash .big{font-size:56px;color:var(--gold);line-height:1.5}
+.splash .orn{width:210px;height:210px;border:3px double var(--gold);border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:22px;background:radial-gradient(circle,#10162a 0,#0a0e1c 100%);box-shadow:0 0 0 6px #0a0e1c,0 0 0 8px var(--gold)}
+.spin{width:38px;height:38px;border:4px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:sp 1s linear infinite;margin:18px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.msg{color:var(--sub);line-height:1.6;max-width:320px}
+
+/* menu */
+.menu{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;gap:11px;padding:20px}
+.mb{width:min(88%,380px);height:50px;border:0;border-radius:11px;background:var(--btn);color:var(--btnTxt);font-size:21px;font-weight:700;letter-spacing:.2px}
+.mb:active{filter:brightness(.85)}
+.mb.new{outline:2px solid var(--gold)}
+
+/* lists */
+.row{display:flex;align-items:center;margin:7px 8px;padding:10px 12px;background:var(--item);border-radius:4px;min-height:54px;gap:12px}
+.row:active{filter:brightness(1.2)}
+.row .no{font-size:22px;min-width:34px}
+.row .mid{flex:1;min-width:0}
+.row .t{font-size:16px}
+.row .s{font-size:12px;color:var(--sub);margin-top:2px}
+.row .r{font-size:14px;color:var(--sub)}
+.row .x{background:none;border:0;color:#ef9a9a;font-size:22px;padding:6px 10px}
+.empty{padding:40px 20px;text-align:center;color:var(--sub);line-height:1.7}
+
+/* go to */
+.gt{display:grid;grid-template-columns:auto 1fr;gap:22px 8px;align-items:end;padding:0 20px;margin-top:38vh}
+.gt label{font-size:24px;color:var(--txt)}
+.gt input{background:none;border:0;border-bottom:2px solid var(--txt);color:var(--txt);font-size:24px;height:44px;border-radius:0;outline:0;min-width:0;padding:0 6px}
+.gt .gtb{grid-column:1/-1;height:48px;border:0;border-radius:4px;background:var(--btn);color:var(--btnTxt);font-size:24px;font-weight:500;margin-top:2px}
+.goto{padding:28px 20px;display:flex;flex-direction:column;gap:14px;align-items:center}
+.goto input,.fld{width:min(88%,380px);height:50px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--txt);font-size:20px;text-align:center;padding:0 12px}
+
+/* reader */
+#pg{padding:10px 14px 24px}
+.pgtxt{direction:rtl;text-align:justify;line-height:2.15;word-spacing:2px}
+.sh{direction:rtl;text-align:center;margin:12px 0 6px;padding:8px;border:1px solid var(--gold);border-radius:8px;background:rgba(212,167,60,.12);display:block}
+.sh span{display:block;font-size:1.25em;color:var(--gold)}
+.sh small{color:var(--sub);font-size:12px;font-family:Roboto,sans-serif}
+.bs{direction:rtl;text-align:center;margin:4px 0 8px;color:var(--txt)}
+.ay{border-radius:6px}
+.ay.focus{background:rgba(255,213,79,.28)}
+.num{color:var(--gold);font-size:.8em;white-space:nowrap}
+.ayw{border-bottom:1px solid var(--line);padding:8px 0}
+.ayw .ay{display:block;direction:rtl;text-align:right;line-height:2.1}
+.trn{font-family:"Noto Sans Bengali",Roboto,sans-serif;font-size:15px;line-height:1.6;color:var(--sub);padding-top:4px}
+#foot{flex:none;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 10px;background:var(--card);border-top:1px solid var(--line)}
+#foot button{background:var(--item);color:var(--txt);border:0;border-radius:8px;height:42px;min-width:64px;font-size:22px}
+#foot span{font-size:14px;color:var(--sub);text-align:center}
+mark,.hl{background:var(--hl);color:#000;border-radius:3px;padding:0 1px}
+
+/* search */
+.sbox{padding:12px;position:sticky;top:0;background:var(--bg);z-index:3;border-bottom:1px solid var(--line)}
+.sbox .line{display:flex;gap:8px}
+.sbox input[type=text]{flex:1;height:48px;font-size:22px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--txt);direction:rtl;text-align:right;min-width:0}
+.sbox button.go{height:48px;padding:0 16px;border:0;border-radius:10px;background:var(--gold);color:#111;font-weight:700;font-size:16px}
+.chips{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{padding:7px 13px;border-radius:18px;border:1px solid var(--line);background:var(--card);color:var(--txt);font-size:13px}
+.chip.on{background:var(--bar);border-color:var(--bar);color:#fff}
+.sum{padding:10px 14px;font-size:14px;color:var(--sub);line-height:1.5}
+.sum b{color:var(--gold)}
+.res{margin:8px;padding:10px 12px;background:var(--item);border-radius:8px}
+.res .ref{font-size:12px;color:var(--sub);margin-bottom:6px;display:flex;justify-content:space-between;gap:8px}
+.res .ref b{color:var(--gold);font-weight:600}
+.res .ayt{direction:rtl;text-align:right;line-height:2.1}
+.more{display:block;margin:12px auto 28px;padding:12px 22px;border:0;border-radius:10px;background:var(--bar);color:#fff;font-size:15px}
+
+/* settings */
+.set{padding:8px 14px 40px}
+.card{background:var(--card);border-radius:10px;padding:14px;margin:12px 0;border:1px solid var(--line)}
+.card h3{margin:0 0 10px;font-size:15px;color:var(--gold)}
+.card .prev{direction:rtl;text-align:center;padding:8px 0}
+.card input[type=range]{width:100%}
+.line2{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0}
+.btn2{border:0;background:var(--bar);color:#fff;padding:10px 14px;border-radius:8px;font-size:14px}
+.btn2.red{background:#8e2b2b}
+.small{font-size:12px;color:var(--sub);line-height:1.6}
+.sw{position:relative;width:50px;height:28px;flex:none}
+.sw input{opacity:0;width:100%;height:100%;position:absolute;margin:0;z-index:2}
+.sw i{position:absolute;inset:0;background:#607d8b;border-radius:14px;transition:.2s}
+.sw i:after{content:"";position:absolute;width:22px;height:22px;background:#fff;border-radius:50%;top:3px;left:3px;transition:.2s}
+.sw input:checked+i{background:#43a047}
+.sw input:checked+i:after{left:25px}
+
+/* sheet & toast */
+#sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:20}
+#sheet{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:16px 16px 0 0;padding:14px 16px 22px;z-index:21;display:none}
+#sheet .ttl{text-align:center;color:var(--sub);font-size:13px;margin-bottom:10px}
+#sheet button{display:block;width:100%;height:50px;margin:8px 0;border:0;border-radius:10px;background:var(--item);color:var(--txt);font-size:17px}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#000c;color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;display:none;z-index:30;max-width:86%;text-align:center}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="bar" style="display:none"><button id="back" aria-label="Back">&#8592;</button><h1 id="ttl"></h1><span class="sp"></span></div>
+  <div id="view"></div>
+</div>
+<div id="sheetbg"></div><div id="sheet"></div><div id="toast"></div>
+
+<script>
+"use strict";
+/* ================= helpers ================= */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const toAr=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
+const BISM='بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ';
+const API='https://api.alquran.cloud/v1/quran/';
+const PARA=[["Alif Laaam Meem","الم"],["Sayaqool","سيقول"],["Tilkarrasul","تلك الرسل"],["Lan Tanaa Loo","لن تنالوا"],["Wal Mohsonat","والمحصنات"],["La Yuhibbullah","لا يحب الله"],["Wa Iza Sami'u","وإذا سمعوا"],["Wa Lao Annana","ولو أننا"],["Qaalal Malao","قال الملأ"],["Wa'lamu annamaa","واعلموا"],["Ya'tazeroon","يعتذرون"],["Wamaa min Daabatin","وما من دابة"],["Wamaaa Ubarri'u","وما أبرئ"],["Rubamaa","ربما"],["Subhanallazii","سبحان الذي"],["Qaala Alam","قال ألم"],["Iqtaraba linnaas","اقترب للناس"],["Qadd Aflahal","قد أفلح"],["Waqaalallajiina","وقال الذين"],["Amman Khalaq","أمن خلق"],["Utlu Maaa Ouhia","اتل ما أوحي"],["Wa Manyaqnut","ومن يقنت"],["Wamaa lia","وما لي"],["Faman Azlam","فمن أظلم"],["Elaihi Yuroddo","إليه يرد"],["Haa Meem","حم"],["Qala Fama","قال فما خطبكم"],["Qadd Sami'Allah","قد سمع الله"],["Tabaarokallazii","تبارك الذي"],["A'mma Yatasaa aloon","عم"]];
+
+/* Arabic normalisation: drop harakat/marks, unify letter shapes */
+const MARKS=/[ؐ-ًؚ-ٰٟۖ-ۭ࣓-ࣿـ​-‏﻿]/g;
+function norm(s){return String(s).replace(MARKS,'').replace(/[أإآٱ]/g,'ا').replace(/[ىی]/g,'ي').replace(/ک/g,'ك').replace(/ة/g,'ه').replace(/ؤ/g,'و').replace(/ئ/g,'ي').replace(/\s+/g,' ').trim();}
+const isWordTok=t=>/[ء-ؿف-يٱ-ۓ]/.test(t);
+const hasArabic=s=>/[؀-ۿ]/.test(s);
+function stripBism(t){
+  const tk=t.split(' ');
+  if(tk.length>4 && norm(tk.slice(0,4).join(' '))==='بسم الله الرحمن الرحيم') return tk.slice(4).join(' ');
+  return t;
+}
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',2200);}
+
+/* ================= storage ================= */
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('quranapp',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+const tmo=(p,ms)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('storage timeout')),ms))]);
+async function idbGet(k){const d=await idb();return new Promise((res,rej)=>{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);});}
+async function idbSet(k,v){const d=await idb();return new Promise((res,rej)=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error);});}
+async function idbDel(k){const d=await idb();return new Promise((res,rej)=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').delete(k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error);});}
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+let S=Object.assign({font:30,theme:'dark',showTr:false,style:'hafezi'},LS.get('q_settings',{}));
+let BM=LS.get('q_bm',[]);
+const saveS=()=>LS.set('q_settings',S), saveBM=()=>LS.set('q_bm',BM);
+function applyTheme(){document.body.classList.toggle('light',S.theme==='light');}
+
+/* ================= data ================= */
+let D=null, PS=[], PE=[], PARASTART=[];
+async function fetchEdition(ed){
+  let last;
+  for(let a=0;a<3;a++){
+    try{const r=await fetch(API+ed);if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();if(!j.data||!j.data.surahs)throw new Error('bad data');return j.data.surahs;}
+    catch(e){last=e;await new Promise(r=>setTimeout(r,800*(a+1)));}
+  }
+  throw last;
+}
+function buildData(uth,sim){
+  const d={v:2,meta:[],ar:[],sm:[],pg:[],jz:[],sn:[],an:[]};
+  if(uth.length!==114||sim.length!==114)throw new Error('surah count mismatch');
+  for(let i=0;i<114;i++){
+    const s=uth[i],ss=sim[i];
+    if(s.ayahs.length!==ss.ayahs.length)throw new Error('ayah mismatch '+s.number);
+    d.meta.push({n:s.number,ar:s.name,en:s.englishName,tr:s.englishNameTranslation,type:s.revelationType,count:s.ayahs.length,start:d.ar.length});
+    for(let k=0;k<s.ayahs.length;k++){
+      const a=s.ayahs[k];let t=a.text,m=ss.ayahs[k].text;
+      if(s.number!==1&&s.number!==9&&k===0){t=stripBism(t);m=stripBism(m);}
+      d.ar.push(t);d.sm.push(m);d.pg.push(a.page);d.jz.push(a.juz);d.sn.push(s.number);d.an.push(a.numberInSurah);
+    }
+  }
+  return d;
+}
+/* ---- 611-page Indo-Pak (Emdadia / Noorani Hafezi) page table ----
+   Page 1 = title page, page 2 = Fatiha, page 3 = Baqarah 1-4 ... page 611 ends An-Nas.
+   PEND lists the LAST ayah (surah.ayah) of every page 2..611 as read from the printed Quran. */
+const PARA_PAGE=[2,23,43,63,83,103,123,143,163,183,203,223,243,263,283,303,323,343,363,383,403,423,443,463,483,503,523,543,563,587];
+const TOTAL_PAGES=611;
+const PEND="1.7,2.4,2.15,2.23,2.29,2.37,2.48,2.57,2.61,2.69,2.76,2.83,2.88,2.93,2.101,2.105,2.112,2.119,2.126,2.134,2.141,2.149,2.156,2.164,2.172,2.177,2.184,2.187,2.193,2.197,2.203,2.211,2.215,2.219,2.224,2.229,2.232,2.235,2.242,2.247,2.252,2.256,2.259,2.264,2.269,2.274,2.281,2.282,2.286,3.8,3.15,3.22,3.29,3.37,3.45,3.53,3.62,3.70,3.77,3.83,3.91,3.100,3.108,3.115,3.121,3.132,3.140,3.147,3.153,3.157,3.165,3.173,3.180,3.186,3.193,3.200,4.5,4.10,4.12,4.18,4.23,4.28,4.34,4.41,4.46,4.54,4.60,4.68,4.75,4.80,4.87,4.91,4.95,4.101,4.105,4.113,4.121,4.127,4.134,4.140,4.147,4.154,4.162,4.170,4.175,5.2,5.5,5.9,5.13,5.17,5.23,5.31,5.36,5.41,5.45,5.50,5.56,5.63,5.68,5.75,5.82,5.89,5.95,5.103,5.108,5.113,5.120,6.8,6.18,6.26,6.34,6.43,6.51,6.58,6.67,6.73,6.81,6.90,6.94,6.101,6.110,6.118,6.124,6.130,6.137,6.142,6.146,6.151,6.157,6.165,7.11,7.22,7.30,7.37,7.43,7.51,7.57,7.67,7.73,7.81,7.87,7.95,7.104,7.121,7.130,7.137,7.143,7.149,7.155,7.159,7.163,7.170,7.178,7.187,7.195,7.206,8.8,8.16,8.25,8.33,8.40,8.45,8.52,8.61,8.69,8.75,9.6,9.13,9.20,9.26,9.31,9.36,9.41,9.47,9.54,9.61,9.68,9.72,9.79,9.86,9.93,9.99,9.106,9.111,9.117,9.122,9.129,10.6,10.14,10.20,10.25,10.33,10.41,10.52,10.61,10.70,10.78,10.88,10.97,10.106,11.5,11.12,11.19,11.28,11.37,11.45,11.53,11.62,11.72,11.81,11.88,11.97,11.108,11.117,12.4,12.14,12.22,12.30,12.37,12.43,12.52,12.63,12.69,12.78,12.86,12.95,12.102,12.111,13.5,13.13,13.17,13.26,13.33,13.41,14.5,14.10,14.20,14.26,14.35,14.43,15.1,15.18,15.33,15.52,15.72,15.90,16.6,16.14,16.26,16.34,16.42,16.54,16.64,16.72,16.79,16.87,16.93,16.102,16.111,16.118,16.128,17.7,17.17,17.29,17.40,17.51,17.60,17.69,17.80,17.92,17.100,17.111,18.11,18.18,18.22,18.29,18.38,18.47,18.54,18.62,18.74,18.83,18.96,18.109,19.11,19.25,19.38,19.51,19.63,19.75,19.95,20.12,20.38,20.51,20.65,20.76,20.86,20.97,20.113,20.126,20.135,21.11,21.24,21.35,21.45,21.57,21.72,21.81,21.90,21.102,22.1,22.6,22.15,22.23,22.30,22.37,22.46,22.55,22.64,22.72,22.78,23.17,23.27,23.42,23.58,23.74,23.89,23.104,23.118,24.7,24.18,24.26,24.31,24.36,24.44,24.53,24.58,24.61,25.2,25.11,25.20,25.32,25.44,25.57,25.68,26.4,26.23,26.43,26.64,26.90,26.117,26.142,26.166,26.189,26.215,27.5,27.16,27.26,27.39,27.52,27.59,27.66,27.79,27.88,28.5,28.13,28.20,28.28,28.35,28.43,28.50,28.59,28.70,28.77,28.84,29.5,29.13,29.21,29.28,29.36,29.44,29.52,29.63,30.5,30.15,30.24,30.32,30.41,30.49,30.58,31.10,31.18,31.27,31.34,32.10,32.20,32.30,33.6,33.15,33.22,33.30,33.35,33.43,33.50,33.54,33.62,33.73,34.7,34.14,34.22,34.32,34.40,34.48,35.3,35.11,35.18,35.29,35.37,35.43,36.9,36.21,36.36,36.52,36.70,37.3,37.29,37.56,37.82,37.107,37.133,37.160,38.3,38.18,38.27,38.43,38.62,38.85,39.5,39.10,39.21,39.31,39.40,39.47,39.56,39.67,39.74,40.7,40.16,40.25,40.32,40.40,40.49,40.58,40.66,40.77,40.85,41.11,41.20,41.28,41.38,41.46,41.54,42.10,42.15,42.22,42.31,42.43,42.51,43.11,43.23,43.35,43.49,43.63,43.79,44.4,44.26,44.46,45.6,45.17,45.26,45.37,46.8,46.15,46.22,46.29,47.1,47.11,47.18,47.29,47.38,48.9,48.15,48.23,48.28,49.4,49.11,49.18,50.15,50.34,51.6,51.30,51.50,52.14,52.31,52.49,53.25,53.39,54.3,54.24,54.44,55.13,55.38,55.66,56.16,56.51,56.76,57.3,57.10,57.17,57.24,57.29,58.6,58.11,58.20,59.3,59.9,59.16,59.24,60.4,60.10,61.4,61.13,62.6,63.3,63.11,64.8,64.18,65.5,65.12,66.6,66.12,67.10,67.22,68.6,68.31,68.48,69.12,69.34,70.4,70.31,71.2,71.18,72.1,72.14,72.27,73.15,73.20,74.30,74.49,75.14,75.40,76.14,76.30,77.25,77.50,78.27,79.8,79.38,80.20,81.7,82.5,83.10,83.33,84.21,85.13,86.17,88.7,89.9,89.30,91.5,92.18,94.8,96.17,98.6,100.8,102.8,105.5,109.2,112.4,114.6".split(',').map(x=>x.split('.').map(Number));
+const SPLIT={p:137,sn:6,an:73,word:'فيكون'}; // page 137 ends inside 6:73, page 138 continues it
+const paraOfPage=p=>{let k=1;for(let j=0;j<30;j++)if(PARA_PAGE[j]<=p)k=j+1;return k;};
+const paraOfAyah=i=>paraOfPage(D.pg[i]);
+function splitWords(i){const w=D.ar[i].split(' ');let k=w.findIndex(x=>norm(x)===SPLIT.word);if(k<0)k=Math.floor(w.length/2);return [w.slice(0,k+1).join(' '),w.slice(k+1).join(' ')];}
+function ayParts(i,p){ // text and whether the end-number belongs on this page
+  if(D.sn[i]===SPLIT.sn&&D.an[i]===SPLIT.an){const [a,b]=splitWords(i);if(p===SPLIT.p)return {t:a,num:false};if(p===SPLIT.p+1)return {t:b,num:true};}
+  return {t:D.ar[i],num:true};
+}
+function index(){
+  D.nm=D.sm.map(norm);
+  const n=D.ar.length;
+  PS=[];PE=[];PARASTART=[];D.pg=new Array(n);
+  PS[1]=0;PE[1]=0;
+  for(let p=2;p<=TOTAL_PAGES;p++){
+    const [s,a]=PEND[p-2];PE[p]=D.meta[s-1].start+a;
+    PS[p]=(p===SPLIT.p+1)?PE[p-1]-1:PE[p-1];
+    if(PS[p]<0)PS[p]=0;
+    for(let i=PS[p];i<PE[p];i++)if(D.pg[i]===undefined)D.pg[i]=p;
+  }
+  for(let i=0;i<n;i++)if(D.pg[i]===undefined)D.pg[i]=TOTAL_PAGES;
+  for(let k=1;k<=30;k++)PARASTART[k]=PS[PARA_PAGE[k-1]];
+  D.maxPage=TOTAL_PAGES;
+}
+const MANZIL_END=[4,9,16,25,36,49,114];
+const manzilOf=sn=>MANZIL_END.findIndex(x=>sn<=x)+1;
+function setLoader(html){$('#bar').style.display='none';$('#view').innerHTML=html;}
+async function downloadAll(){
+  setLoader(`<div class="center"><div class="spin"></div><div class="msg" id="dl">প্রথমবার কোরআনের ডেটা ডাউনলোড হচ্ছে…<br>(ইন্টারনেট দরকার, মাত্র একবার। প্রায় ৪ MB)</div></div>`);
+  try{
+    $('#dl').firstChild.textContent='কোরআনের মূল টেক্সট (১/২)…';
+    const uth=await fetchEdition('quran-uthmani');
+    $('#dl').firstChild.textContent='সার্চের জন্য সহজ টেক্সট (২/২)…';
+    const sim=await fetchEdition('quran-simple');
+    D=buildData(uth,sim);
+    try{await tmo(idbSet('quran_v2',D),8000);}catch(e){console.warn('idb save failed',e);}
+    index();
+  }catch(e){
+    setLoader(`<div class="center"><div class="msg">ডেটা ডাউনলোড করা যায়নি।<br>ইন্টারনেট সংযোগ চেক করে আবার চেষ্টা করুন।<br><small>${esc(e.message||e)}</small></div><br><button class="mb" id="retry">Retry</button></div>`);
+    await new Promise(res=>{$('#retry').onclick=res;});
+    return downloadAll();
+  }
+}
+async function loadTranslation(force){
+  if(D.tr&&!force)return true;
+  if(!force){try{const t=await tmo(idbGet('tr_bn'),4000);if(t&&t.length===D.ar.length){D.tr=t;return true;}}catch(e){}}
+  toast('বাংলা অনুবাদ ডাউনলোড হচ্ছে…');
+  try{
+    const sur=await fetchEdition('bn.bengali');const t=[];
+    sur.forEach(s=>s.ayahs.forEach(a=>t.push(a.text)));
+    if(t.length!==D.ar.length)throw new Error('translation size mismatch');
+    D.tr=t;try{await tmo(idbSet('tr_bn',t),8000);}catch(e){}
+    toast('বাংলা অনুবাদ প্রস্তুত');return true;
+  }catch(e){toast('অনুবাদ ডাউনলোড ব্যর্থ: '+(e.message||e));return false;}
+}
+
+/* ================= router ================= */
+const go=(h,replace)=>{if(replace)location.replace(h);else location.hash=h;};
+function setBar(title,show=true){$('#bar').style.display=show?'flex':'none';$('#ttl').textContent=title;}
+$('#back').onclick=()=>{if(history.length>1)history.back();else location.hash='#/';};
+function route(){
+  if(!D)return;
+  closeSheet();
+  const oldf=$('#foot');if(oldf)oldf.remove();$('#view').classList.remove('paper');
+  const h=(location.hash||'#/').slice(1);
+  const [path,qs]=h.split('?');const q=new URLSearchParams(qs||'');
+  const parts=path.split('/').filter(Boolean);
+  const v=$('#view');v.scrollTop=0;
+  switch(parts[0]){
+    case 'surah':return viewSurah();
+    case 'para':return viewPara();
+    case 'goto':return viewGoto();
+    case 'page':return viewPage(parseInt(parts[1])||1,q.has('a')?parseInt(q.get('a')):null,q.get('hl'));
+    case 'bookmarks':return viewBookmarks();
+    case 'search':return viewSearch();
+    case 'settings':return viewSettings();
+    default:return viewMenu();
+  }
+}
+window.addEventListener('hashchange',route);
+
+/* ================= views ================= */
+function viewMenu(){
+  setBar('',false);
+  const items=[['surah','SURAH INDEX'],['para','PARA INDEX'],['goto','GO TO PAGE'],['bookmarks','BOOKMARKS'],['search','WORD SEARCH'],['settings','SETTINGS']];
+  $('#view').innerHTML='<div class="menu">'+items.map(([k,l])=>`<button class="mb${k==='search'?' new':''}" data-k="${k}">${l}</button>`).join('')+'</div>';
+  $('#view').querySelectorAll('.mb').forEach(b=>b.onclick=()=>go('#/'+b.dataset.k));
+}
+function viewSurah(){
+  setBar('Surah');
+  $('#view').innerHTML=D.meta.map(m=>`<div class="row" data-i="${m.start}"><span class="no">${m.n}</span><div class="mid"><div class="t">${esc(m.en)} <span class="ar">(${esc(m.ar.replace(/^سُورَةُ\s*/,''))})</span></div><div class="s">${esc(m.tr)} · ${m.type} · ${m.count} ayah</div></div><span class="r">${D.pg[m.start]}</span></div>`).join('');
+  $('#view').querySelectorAll('.row').forEach(r=>r.onclick=()=>{const i=+r.dataset.i;go(`#/page/${D.pg[i]}?a=${i}`);});
+}
+function viewPara(){
+  setBar('Para');
+  $('#view').innerHTML=PARA.map((p,k)=>{const i=PARASTART[k+1];return `<div class="row" data-i="${i===undefined?'':i}"><span class="no">${k+1}</span><div class="mid"><div class="t">${p[0]} <span class="ar">(${p[1]})</span></div></div><span class="r">${i===undefined?'-':D.pg[i]}</span></div>`;}).join('');
+  $('#view').querySelectorAll('.row').forEach(r=>r.onclick=()=>{if(r.dataset.i==='')return;const i=+r.dataset.i;go(`#/page/${D.pg[i]}?a=${i}`);});
+}
+function viewGoto(){
+  setBar('Go to page',false);
+  $('#view').innerHTML=`<div class="gt"><label for="gpara">Para Number:</label><input id="gpara" type="number" inputmode="numeric" min="1" max="30"><label for="gp">Page Number:</label><input id="gp" type="number" inputmode="numeric" min="1" max="${D.maxPage}"><button class="gtb" id="gb">GO</button></div>`;
+  const doGo=()=>{
+    const pa=parseInt($('#gpara').value),p=parseInt($('#gp').value);
+    if(p){if(p<1||p>D.maxPage){toast('Page 1 - '+D.maxPage);return;}go('#/page/'+p);return;}
+    if(pa){if(pa<1||pa>30){toast('Para 1 - 30');return;}go('#/page/'+PARA_PAGE[pa-1]);return;}
+    toast('Enter para or page number');
+  };
+  $('#gb').onclick=doGo;
+  ['gpara','gp'].forEach(id=>$('#'+id).addEventListener('keydown',e=>{if(e.key==='Enter')doGo();}));
+}
+function viewPage(p,focus,hlParam){
+  p=Math.min(D.maxPage,Math.max(1,p));
+  LS.set('q_last',p);
+  const s=PS[p],e=PE[p];
+  const m0=D.meta[D.sn[s]-1];
+  setBar(p===1?'Title page':m0.en+' · Para '+paraOfPage(p));
+  const tr=S.showTr&&D.tr;
+  const hl=hlParam?new Set(hlParam.split(',').map(Number)):null;
+  const hafezi=S.style!=='simple'&&!tr;
+  $('#view').classList.toggle('paper',hafezi);
+  let h;
+  if(p===1){$('#view').classList.remove('paper');h=`<div class="hf" style="text-align:center"><div class="hf-frame" style="padding:40px 12px"><div class="ar" style="font-size:34px;line-height:1.8">القرآن الكريم</div><div class="ar" style="font-size:22px;margin-top:20px">نورانی حافظی قرآن شریف</div><div style="margin-top:28px;opacity:.7">611 pages · 15 lines</div><div style="margin-top:20px;opacity:.7">&#8592; swipe / tap &#8250; to start</div></div></div>`;}
+  else if(hafezi){h=hafeziHTML(p,s,e);}else{
+  h=`<div id="pg" class="ar" style="font-size:${S.font}px"><div class="${tr?'':'pgtxt'}">`;
+  for(let i=s;i<e;i++){
+    if(D.an[i]===1){const m=D.meta[D.sn[i]-1];h+=`<div class="sh"><span>${esc(m.ar)}</span><small>${esc(m.en)} · ${m.count} ayah</small></div>`;if(D.sn[i]!==1&&D.sn[i]!==9)h+=`<div class="bs">${BISM}</div>`;}
+    const ap=ayParts(i,p);const body=`<span class="ay" data-i="${i}">${esc(ap.t)} ${ap.num?`<span class="num">﴿${toAr(D.an[i])}﴾</span>`:''}</span>`;
+    h+=tr?`<div class="ayw">${body}<div class="trn">${esc(D.tr[i])}</div></div>`:body+' ';
+  }
+  h+='</div></div>';}
+  $('#view').innerHTML=h+(hafezi?'':'<div style="height:6px"></div>');
+  const foot=document.createElement('div');foot.id='foot';
+  foot.innerHTML=`<button id="nx">&#8249;</button><span>${p} / ${D.maxPage}</span><button id="pv">&#8250;</button>`;
+  // RTL mushaf: left arrow = next page, right arrow = previous page
+  $('#app').appendChild(foot);
+  if(hafezi&&p!==1){fitHafezi();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if($('.hf'))fitHafezi();});}
+  $('#nx').onclick=()=>{if(p<D.maxPage)go('#/page/'+(p+1),true);};
+  $('#pv').onclick=()=>{if(p>1)go('#/page/'+(p-1),true);};
+  $('#view').querySelectorAll('.ay').forEach(a=>a.onclick=()=>{if(String(window.getSelection()))return;ayahSheet(+a.dataset.i);});
+  if(focus!==null&&focus!==undefined&&!isNaN(focus)){
+    const el=$(`.ay[data-i="${focus}"]`);
+    if(el){el.classList.add('focus');setTimeout(()=>el.scrollIntoView({block:'center'}),50);}
+  }
+  // swipe
+  const v=$('#view');let x0=null,y0=0;
+  v.ontouchstart=e=>{x0=e.touches[0].clientX;y0=e.touches[0].clientY;};
+  v.ontouchend=e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;x0=null;
+    if(Math.abs(dx)>70&&Math.abs(dy)<50){if(dx>0&&p<D.maxPage)go('#/page/'+(p+1),true);else if(dx<0&&p>1)go('#/page/'+(p-1),true);}};
+}
+
+function hafeziHTML(p,s,e){
+  const m0=D.meta[D.sn[s]-1];
+  const para=PARA[paraOfPage(p)-1]||['',''];
+  let t='';
+  for(let i=s;i<e;i++){
+    if(D.an[i]===1){const m=D.meta[D.sn[i]-1];t+=`<div class="hfh"><span>${esc(m.ar)}</span></div>`;if(D.sn[i]!==1&&D.sn[i]!==9)t+=`<div class="hfb">${BISM}</div>`;}
+    const ap=ayParts(i,p);t+=`<span class="ay" data-i="${i}">${esc(ap.t)}${ap.num?`<span class="num">${toAr(D.an[i])}</span>`:''}</span> `;
+  }
+  const last=e-1,lj=D.an[last]!==D.meta[D.sn[last]-1].count;
+  const nameShort=m0.ar.replace(/^سُورَةُ\s*/,'');
+  return `<div class="hf"><div class="hf-top"><span class="ar">${esc(nameShort)} ${toAr(D.sn[s])}</span><b>${p}</b><span class="ar">${esc(para[1])} ${toAr(paraOfPage(p))}</span></div><div class="hf-frame"><div class="hf-in" id="hfin"><div id="hft" class="hf-text ar${lj?' lj':''}">${t}</div></div></div><div class="hf-foot ar">منزل ${toAr(manzilOf(D.sn[s]))}</div></div>`;
+}
+/* choose the biggest font that keeps the page inside 15 ruled lines */
+function fitHafezi(){
+  const v=$('#view'),hf=$('.hf'),inn=$('#hfin'),tx=$('#hft');if(!hf||!inn||!tx)return;
+  const availH=v.clientHeight-6-26-4-26;
+  const L=Math.max(24,Math.floor((availH-30)/15));
+  hf.style.setProperty('--L',L+'px');
+  inn.style.height=(L*15)+'px';
+  tx.style.lineHeight=L+'px';
+  let lo=9,hi=Math.min(L*0.8,44),best=lo;
+  for(let k=0;k<14;k++){const mid=(lo+hi)/2;tx.style.fontSize=mid+'px';if(tx.offsetHeight<=L*15+1){best=mid;lo=mid;}else hi=mid;}
+  tx.style.fontSize=best+'px';
+}
+window.addEventListener('resize',()=>{if($('.hf'))fitHafezi();});
+function refText(i){const m=D.meta[D.sn[i]-1];return `${m.en} ${D.sn[i]}:${D.an[i]}`;}
+function viewBookmarks(){
+  setBar('Bookmarks');
+  if(!BM.length){$('#view').innerHTML='<div class="empty">কোনো বুকমার্ক নেই।<br>পড়ার সময় যেকোনো আয়াতে ট্যাপ করে বুকমার্ক করুন।</div>';return;}
+  $('#view').innerHTML=BM.map((i,k)=>`<div class="row" data-i="${i}"><div class="mid"><div class="t">${esc(refText(i))} <span class="r">· Page ${D.pg[i]}</span></div><div class="s ar" style="direction:rtl;text-align:right;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(D.ar[i])}</div></div><button class="x" data-k="${k}">&#10005;</button></div>`).join('');
+  $('#view').querySelectorAll('.row').forEach(r=>r.onclick=e=>{if(e.target.classList.contains('x'))return;const i=+r.dataset.i;go(`#/page/${D.pg[i]}?a=${i}`);});
+  $('#view').querySelectorAll('.x').forEach(b=>b.onclick=()=>{BM.splice(+b.dataset.k,1);saveBM();viewBookmarks();});
+}
+/* ---- sheet ---- */
+function closeSheet(){$('#sheet').style.display='none';$('#sheetbg').style.display='none';}
+$('#sheetbg').onclick=closeSheet;
+function ayahSheet(i){
+  const has=BM.includes(i);
+  $('#sheet').innerHTML=`<div class="ttl">${esc(refText(i))} · Page ${D.pg[i]}</div><button id="s1">${has?'Remove bookmark':'Bookmark this ayah'}</button><button id="s2">Copy ayah</button><button id="s3">Cancel</button>`;
+  $('#sheet').style.display='block';$('#sheetbg').style.display='block';
+  $('#s1').onclick=()=>{if(has)BM=BM.filter(x=>x!==i);else BM.unshift(i);saveBM();closeSheet();toast(has?'বুকমার্ক সরানো হয়েছে':'বুকমার্ক করা হয়েছে');};
+  $('#s2').onclick=()=>{copyText(`${D.ar[i]} ﴿${toAr(D.an[i])}﴾\n[${refText(i)}]`+(D.tr?`\n${D.tr[i]}`:''));closeSheet();};
+  $('#s3').onclick=closeSheet;
+}
+function copyText(t){
+  const fb=()=>{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');toast('কপি হয়েছে');}catch(e){toast('কপি করা যায়নি');}a.remove();};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(()=>toast('কপি হয়েছে'),fb);else fb();
+}
+
+/* ================= WORD SEARCH ================= */
+const SQ={q:'',whole:false,res:[],shown:0,mode:'ar',tokens:0,total:0};
+function searchArabic(q,whole){
+  const nq=norm(q);if(!nq)return{res:[],total:0};
+  const res=[];let total=0;
+  for(let i=0;i<D.nm.length;i++){
+    const t=D.nm[i];let from=0,pos,hits=[];
+    while((pos=t.indexOf(nq,from))!==-1){
+      const okL=pos===0||t[pos-1]===' ',okR=pos+nq.length===t.length||t[pos+nq.length]===' ';
+      if(!whole||(okL&&okR))hits.push(pos);
+      from=pos+nq.length;
+    }
+    if(hits.length){total+=hits.length;res.push({i,hits,len:nq.length});}
+  }
+  return{res,total};
+}
+function searchBengali(q){
+  const nq=q.trim().toLowerCase();if(!nq||!D.tr)return{res:[],total:0};
+  const res=[];let total=0;
+  for(let i=0;i<D.tr.length;i++){
+    const t=D.tr[i].toLowerCase();let from=0,pos,hits=[];
+    while((pos=t.indexOf(nq,from))!==-1){hits.push(pos);from=pos+nq.length;}
+    if(hits.length){total+=hits.length;res.push({i,hits,len:nq.length});}
+  }
+  return{res,total};
+}
+/* highlight whole words of the Uthmani text that contain a match */
+function hlArabicHTML(r){
+  const nm=D.nm[r.i];
+  const wset=new Set();
+  r.hits.forEach(p=>{
+    const a=(nm.slice(0,p).match(/ /g)||[]).length;
+    const b=(nm.slice(0,p+r.len-1).match(/ /g)||[]).length;
+    for(let w=a;w<=b;w++)wset.add(w);
+  });
+  const toks=D.ar[r.i].split(' ');
+  const nWords=toks.filter(isWordTok).length;
+  const nmWords=nm?nm.split(' ').length:0;
+  if(nWords!==nmWords){ // fallback: highlight in plain text
+    let o='',last=0;
+    r.hits.forEach(p=>{o+=esc(nm.slice(last,p))+'<mark>'+esc(nm.slice(p,p+r.len))+'</mark>';last=p+r.len;});
+    return o+esc(nm.slice(last));
+  }
+  let w=0;
+  return toks.map(t=>{if(!isWordTok(t))return esc(t);const on=wset.has(w++);return on?`<mark>${esc(t)}</mark>`:esc(t);}).join(' ');
+}
+function hlTextHTML(text,r){
+  let o='',last=0;
+  r.hits.forEach(p=>{o+=esc(text.slice(last,p))+'<mark>'+esc(text.slice(p,p+r.len))+'</mark>';last=p+r.len;});
+  return o+esc(text.slice(last));
+}
+function viewSearch(){
+  setBar('Word Search');
+  $('#view').innerHTML=`<div class="sbox"><div class="line"><input type="text" id="q" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="go" id="gs">খুঁজুন</button></div>
+  <div class="chips"><span class="chip ${SQ.whole?'':'on'}" id="c1">শব্দের যেকোনো অংশ</span><span class="chip ${SQ.whole?'on':''}" id="c2">পুরো শব্দ</span></div></div><div id="sout"><div class="empty">যেকোনো শব্দ লিখুন (আরবি, হরকত ছাড়াই চলবে)।<br>সেই শব্দ যত আয়াতে আছে সব একসাথে দেখাবে।<br><small>যেমন: رحمة · الصبر · موسى</small></div></div>`;
+  $('#q').placeholder='আরবি শব্দ লিখুন… مثال: رحمة';
+  $('#q').value=SQ.q;
+  const run=()=>{SQ.q=$('#q').value;doSearch();};
+  $('#gs').onclick=run;
+  $('#q').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();run();$('#q').blur();}});
+  let tm;$('#q').addEventListener('input',()=>{clearTimeout(tm);tm=setTimeout(run,450);});
+  $('#c1').onclick=()=>{SQ.whole=false;$('#c1').classList.add('on');$('#c2').classList.remove('on');run();};
+  $('#c2').onclick=()=>{SQ.whole=true;$('#c2').classList.add('on');$('#c1').classList.remove('on');run();};
+  if(SQ.q)doSearch();
+}
+function doSearch(){
+  const out=$('#sout');if(!out)return;
+  const q=SQ.q.trim();
+  if(!q){out.innerHTML='<div class="empty">একটি শব্দ লিখুন।</div>';return;}
+  let r;
+  if(hasArabic(q)){SQ.mode='ar';r=searchArabic(q,SQ.whole);}
+  else{
+    SQ.mode='bn';
+    if(!D.tr){out.innerHTML='<div class="empty">বাংলা শব্দ দিয়ে খুঁজতে হলে Settings থেকে “বাংলা অনুবাদ” চালু করুন।<br>অথবা আরবি শব্দ লিখুন।</div>';return;}
+    r=searchBengali(q);
+  }
+  SQ.res=r.res;SQ.total=r.total;SQ.shown=0;
+  if(!r.res.length){out.innerHTML=`<div class="empty">“${esc(q)}” — কোনো আয়াত পাওয়া যায়নি।</div>`;return;}
+  out.innerHTML=`<div class="sum">“<b>${esc(q)}</b>” — মোট <b>${r.total}</b> বার, <b>${r.res.length}</b>টি আয়াতে পাওয়া গেছে</div><div id="rl"></div><div id="mr"></div>`;
+  showMore();
+}
+function showMore(){
+  const rl=$('#rl');if(!rl)return;
+  const end=Math.min(SQ.res.length,SQ.shown+40);
+  let h='';
+  for(let k=SQ.shown;k<end;k++){
+    const r=SQ.res[k];
+    const body=SQ.mode==='ar'?hlArabicHTML(r):esc(D.ar[r.i]);
+    const trn=SQ.mode==='bn'?`<div class="trn">${hlTextHTML(D.tr[r.i],{hits:r.hits,len:r.len})}</div>`:(S.showTr&&D.tr?`<div class="trn">${esc(D.tr[r.i])}</div>`:'');
+    h+=`<div class="res" data-i="${r.i}"><div class="ref"><b>${esc(refText(r.i))}</b><span>Page ${D.pg[r.i]} · Para ${paraOfAyah(r.i)}${r.hits.length>1?' · ×'+r.hits.length:''}</span></div><div class="ayt ar" style="font-size:${Math.max(20,S.font-4)}px">${body}</div>${trn}</div>`;
+  }
+  rl.insertAdjacentHTML('beforeend',h);
+  SQ.shown=end;
+  rl.querySelectorAll('.res:not([data-b])').forEach(el=>{el.dataset.b=1;el.onclick=()=>{if(String(window.getSelection()))return;const i=+el.dataset.i;go(`#/page/${D.pg[i]}?a=${i}`);};});
+  const mr=$('#mr');
+  mr.innerHTML=SQ.shown<SQ.res.length?`<button class="more" id="mb2">আরও দেখান (${SQ.res.length-SQ.shown}টি বাকি)</button>`:'<div style="height:30px"></div>';
+  if($('#mb2'))$('#mb2').onclick=showMore;
+}
+
+/* ================= settings ================= */
+function viewSettings(){
+  setBar('Settings');
+  $('#view').innerHTML=`<div class="set">
+  <div class="card"><h3>Font size (Simple স্টাইল)</h3><div class="prev ar" id="pv2" style="font-size:${S.font}px">${BISM}</div><input type="range" id="fs" min="20" max="52" value="${S.font}"></div>
+  <div class="card"><h3>Reading style</h3><div class="chips" style="margin:0"><span class="chip ${S.style!=='simple'?'on':''}" id="st1">Hafezi (১৫ লাইন, তারা-নকশা)</span><span class="chip ${S.style==='simple'?'on':''}" id="st2">Simple</span></div><div class="small" style="margin-top:8px">Hafezi স্টাইলে লেখার সাইজ নিজে থেকেই পেজে ফিট হয়। অনুবাদ চালু থাকলে পেজ Simple স্টাইলে দেখাবে।</div></div>
+  <div class="card"><h3>Theme</h3><div class="line2"><span>Light mode</span><label class="sw"><input type="checkbox" id="th" ${S.theme==='light'?'checked':''}><i></i></label></div></div>
+  <div class="card"><h3>বাংলা অনুবাদ</h3><div class="line2"><span>পড়ার পাতা ও সার্চে অনুবাদ দেখান</span><label class="sw"><input type="checkbox" id="tr" ${S.showTr?'checked':''}><i></i></label></div><div class="small">প্রথমবার চালু করলে অনুবাদ ডাউনলোড হবে (ইন্টারনেট লাগবে)। চালু থাকলে বাংলা শব্দ দিয়েও সার্চ করা যায়।</div></div>
+  <div class="card"><h3>Data</h3><div class="line2"><span class="small">কোরআনের ডেটা আবার ডাউনলোড করুন</span><button class="btn2" id="rd">Re-download</button></div><div class="line2"><span class="small">সব বুকমার্ক মুছুন (${BM.length}টি)</span><button class="btn2 red" id="cb">Clear</button></div></div>
+  <div class="card"><h3>About</h3><div class="small">কোরআনের টেক্সট: Tanzil Project (tanzil.net), AlQuran Cloud API-এর মাধ্যমে। বাংলা অনুবাদ: মুহিউদ্দীন খান। পৃষ্ঠা নম্বর মদিনা মুসহাফ (৬০৪ পৃষ্ঠা) অনুযায়ী।</div></div></div>`;
+  $('#fs').oninput=e=>{S.font=+e.target.value;$('#pv2').style.fontSize=S.font+'px';saveS();};
+  $('#st1').onclick=()=>{S.style='hafezi';saveS();$('#st1').classList.add('on');$('#st2').classList.remove('on');};
+  $('#st2').onclick=()=>{S.style='simple';saveS();$('#st2').classList.add('on');$('#st1').classList.remove('on');};
+  $('#th').onchange=e=>{S.theme=e.target.checked?'light':'dark';saveS();applyTheme();};
+  $('#tr').onchange=async e=>{
+    if(e.target.checked){const ok=await loadTranslation();if(!ok){e.target.checked=false;S.showTr=false;saveS();return;}S.showTr=true;}else S.showTr=false;saveS();};
+  $('#cb').onclick=()=>{if(!BM.length)return;if(confirm('সব বুকমার্ক মুছে ফেলবেন?')){BM=[];saveBM();viewSettings();toast('মুছে ফেলা হয়েছে');}};
+  $('#rd').onclick=async()=>{if(!confirm('ডেটা আবার ডাউনলোড করবেন? (ইন্টারনেট লাগবে)'))return;
+    try{await idbDel('quran_v2');await idbDel('tr_bn');}catch(e){}
+    D=null;await downloadAll();if(S.showTr)await loadTranslation(true);location.hash='#/';route();};
+}
+
+/* ================= init ================= */
+async function init(){
+  applyTheme();
+  const t0=Date.now();
+  $('#view').innerHTML=`<div class="center splash"><div class="orn"><div class="big ar">القرآن<br>الكريم</div></div><div class="spin"></div></div>`;
+  try{const d=await tmo(idbGet('quran_v2'),4000);if(d&&d.v===2&&d.ar&&d.ar.length>6000){D=d;index();}}catch(e){console.warn('idb read failed',e);}
+  if(D){const w=900-(Date.now()-t0);if(w>0)await new Promise(r=>setTimeout(r,w));}
+  else await downloadAll();
+  if(S.showTr){const ok=await loadTranslation();if(!ok){S.showTr=false;saveS();}}
+  route();
+}
+window.__ready=init();
+</script>
+</body>
+</html>
