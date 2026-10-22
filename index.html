@@ -31,6 +31,7 @@ body{background:var(--bg);color:var(--txt);font-family:Roboto,"Noto Sans Bengali
 .hf-frame{padding:13px;background:#fff url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2713%27%20height%3D%2713%27%3E%3Crect%20width%3D%2713%27%20height%3D%2713%27%20fill%3D%27white%27%2F%3E%3Cpolygon%20points%3D%276.5%2C0.4%208.1%2C4.9%2012.6%2C6.5%208.1%2C8.1%206.5%2C12.6%204.9%2C8.1%200.4%2C6.5%204.9%2C4.9%27%20fill%3D%27black%27%2F%3E%3Ccircle%20cx%3D%276.5%27%20cy%3D%276.5%27%20r%3D%271.3%27%20fill%3D%27white%27%2F%3E%3C%2Fsvg%3E") repeat;background-size:13px 13px;border:1px solid #000}
 .hf-in{background:#fff;border:1.5px solid #000;padding:0 5px;overflow:hidden}
 .hf-text{direction:rtl;text-align:justify;text-justify:inter-word;color:#000;-webkit-text-stroke:.35px #000;background-image:linear-gradient(to bottom,transparent calc(var(--L) - 1px),#222 calc(var(--L) - 1px));background-size:100% var(--L);background-repeat:repeat-y}
+.hf-text .ay{position:relative;top:-.17em}
 .hf-text.lj{text-align-last:justify}
 .hf-text .hfh{display:block;height:var(--L);padding:4px 0;-webkit-text-stroke:0}
 .hf-text .hfh span{display:flex;align-items:center;justify-content:center;height:100%;line-height:1;background:#fff;border:1.5px solid #000;outline:1px solid #000;outline-offset:2px;border-radius:4px}
@@ -304,8 +305,14 @@ function viewGoto(){
   $('#view').innerHTML=`<div class="gt"><label for="gpara">Para Number:</label><input id="gpara" type="number" inputmode="numeric" min="1" max="30"><label for="gp">Page Number:</label><input id="gp" type="number" inputmode="numeric" min="1" max="${D.maxPage}"><button class="gtb" id="gb">GO</button></div>`;
   const doGo=()=>{
     const pa=parseInt($('#gpara').value),p=parseInt($('#gp').value);
+    if(pa){
+      if(pa<1||pa>30){toast('Para 1 - 30');return;}
+      const st=PARA_PAGE[pa-1],en=pa<30?PARA_PAGE[pa]-1:D.maxPage,n=en-st+1;
+      if(!p){go('#/page/'+st);return;}
+      if(p<1||p>n){toast('Para '+pa+' has pages 1 - '+n);return;}
+      go('#/page/'+(st+p-1));return;
+    }
     if(p){if(p<1||p>D.maxPage){toast('Page 1 - '+D.maxPage);return;}go('#/page/'+p);return;}
-    if(pa){if(pa<1||pa>30){toast('Para 1 - 30');return;}go('#/page/'+PARA_PAGE[pa-1]);return;}
     toast('Enter para or page number');
   };
   $('#gb').onclick=doGo;
@@ -316,7 +323,7 @@ function viewPage(p,focus,hlParam){
   LS.set('q_last',p);
   const s=PS[p],e=PE[p];
   const m0=D.meta[D.sn[s]-1];
-  setBar(p===1?'Title page':m0.en+' · Para '+paraOfPage(p));
+  setBar(p===1?'Title page':m0.en+' · Para '+paraOfPage(p)+' · Page '+(p-PARA_PAGE[paraOfPage(p)-1]+1));
   const tr=S.showTr&&D.tr;
   const hl=hlParam?new Set(hlParam.split(',').map(Number)):null;
   const hafezi=S.style!=='simple'&&!tr;
@@ -371,7 +378,7 @@ function fitHafezi(){
   hf.style.setProperty('--L',L+'px');
   inn.style.height=(L*15)+'px';
   tx.style.lineHeight=L+'px';
-  let lo=9,hi=Math.min(L*0.8,44),best=lo;
+  let lo=9,hi=Math.min(L*0.9,64),best=lo;
   for(let k=0;k<14;k++){const mid=(lo+hi)/2;tx.style.fontSize=mid+'px';if(tx.offsetHeight<=L*15+1){best=mid;lo=mid;}else hi=mid;}
   tx.style.fontSize=best+'px';
 }
