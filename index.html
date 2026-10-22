@@ -31,13 +31,18 @@ body{background:var(--bg);color:var(--txt);font-family:Roboto,"Noto Sans Bengali
 .hf-foot{height:24px;line-height:24px;text-align:center;font-size:17px;color:#000;margin-top:2px}
 .hf-frame{padding:13px;background:#fff url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2713%27%20height%3D%2713%27%3E%3Crect%20width%3D%2713%27%20height%3D%2713%27%20fill%3D%27white%27%2F%3E%3Cpolygon%20points%3D%276.5%2C0.4%208.1%2C4.9%2012.6%2C6.5%208.1%2C8.1%206.5%2C12.6%204.9%2C8.1%200.4%2C6.5%204.9%2C4.9%27%20fill%3D%27black%27%2F%3E%3Ccircle%20cx%3D%276.5%27%20cy%3D%276.5%27%20r%3D%271.3%27%20fill%3D%27white%27%2F%3E%3C%2Fsvg%3E") repeat;background-size:13px 13px;border:1px solid #000}
 .hf-in{background:#fff;border:1.5px solid #000;padding:0 5px;overflow:hidden}
-.hf-text{direction:rtl;text-align:justify;text-justify:inter-word;color:#000;-webkit-text-stroke:.35px #000;--ry:calc(var(--L) - 6px);background-image:linear-gradient(to bottom,transparent calc(var(--ry) - 1.5px),#222 calc(var(--ry) - 1.5px),#222 var(--ry),transparent var(--ry));background-size:100% var(--L);background-repeat:repeat-y}
-.hf-text.lj{text-align-last:justify}
+.hf-text{direction:rtl;color:#000;-webkit-text-stroke:.35px #000;--ry:calc(var(--L) - 6px)}
+.hf-text .ln,.hf-text .hfb{height:var(--L);background-image:linear-gradient(to bottom,transparent calc(var(--ry) - 1.5px),#222 calc(var(--ry) - 1.5px),#222 var(--ry),transparent var(--ry))}
+.hf-text .ln{display:flex;direction:rtl;white-space:nowrap}
+.hf-text .ln.sb{justify-content:space-between}
+.hf-text .ln.st{justify-content:flex-start;gap:.28em}
+.hf-text .hw{display:block;height:var(--L);line-height:var(--L);white-space:nowrap;flex:none}
 .hf-text .hfh{display:flex;align-items:flex-end;height:var(--L);padding:0;background:#fff;-webkit-text-stroke:0}
 .hf-text .hfh span{display:flex;align-items:center;justify-content:center;width:100%;height:calc(var(--L) - 8px);margin-bottom:4px;box-sizing:border-box;line-height:1;background:#fff;border:1.5px solid #000;outline:1px solid #000;outline-offset:2px;border-radius:4px}
-.hf-text .hfb{text-align-last:center;display:block;height:var(--L);line-height:var(--L);text-align:center;-webkit-text-stroke:.2px #000}
+.hf-text .hfb{display:block;line-height:var(--L);text-align:center;-webkit-text-stroke:.2px #000}
 .hf-text .num{color:#000;display:inline-block;width:1.5em;height:1.5em;line-height:1.5em;border:1.2px solid #000;border-radius:50%;text-align:center;font-size:.55em;margin:0 .35em;vertical-align:middle;-webkit-text-stroke:0;font-family:Roboto,sans-serif}
 .hf-text .ay.focus{background:rgba(255,213,79,.55)}
+.hf-text .hfh{width:100%}
 
 /* splash & loader */
 .center{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
@@ -142,6 +147,7 @@ mark,.hl{background:var(--hl);color:#000;border-radius:3px;padding:0 1px}
 "use strict";
 /* ================= helpers ================= */
 const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const toAr=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
 const BISM='بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ';
@@ -319,6 +325,7 @@ function viewGoto(){
   ['gpara','gp'].forEach(id=>$('#'+id).addEventListener('keydown',e=>{if(e.key==='Enter')doGo();}));
 }
 function viewPage(p,focus,hlParam){
+  window.__focusEl=null;
   p=Math.min(D.maxPage,Math.max(1,p));
   LS.set('q_last',p);
   const s=PS[p],e=PE[p];
@@ -346,10 +353,10 @@ function viewPage(p,focus,hlParam){
   if(hafezi&&p!==1){fitHafezi();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if($('.hf'))fitHafezi();});}
   $('#nx').onclick=()=>{if(p<D.maxPage)go('#/page/'+(p+1),true);};
   $('#pv').onclick=()=>{if(p>1)go('#/page/'+(p-1),true);};
-  $('#view').querySelectorAll('.ay').forEach(a=>a.onclick=()=>{if(String(window.getSelection()))return;ayahSheet(+a.dataset.i);});
+  $('#view').onclick=e=>{const a=e.target.closest&&e.target.closest('.ay');if(!a||String(window.getSelection()))return;ayahSheet(+a.dataset.i);};
   if(focus!==null&&focus!==undefined&&!isNaN(focus)){
-    const el=$(`.ay[data-i="${focus}"]`);
-    if(el){el.classList.add('focus');setTimeout(()=>el.scrollIntoView({block:'center'}),50);}
+    const doF=()=>{const els=$$(`.ay[data-i="${focus}"]`);els.forEach(x=>x.classList.add('focus'));if(els[0])setTimeout(()=>els[0].scrollIntoView({block:'center'}),50);};
+    window.__focusEl=doF;doF();
   }
   // swipe
   const v=$('#view');let x0=null,y0=0;
@@ -358,31 +365,63 @@ function viewPage(p,focus,hlParam){
     if(Math.abs(dx)>70&&Math.abs(dy)<50){if(dx>0&&p<D.maxPage)go('#/page/'+(p+1),true);else if(dx<0&&p>1)go('#/page/'+(p-1),true);}};
 }
 
+let HFTOK=[];
 function hafeziHTML(p,s,e){
   const m0=D.meta[D.sn[s]-1];
   const para=PARA[paraOfPage(p)-1]||['',''];
-  let t='';
+  HFTOK=[];
   for(let i=s;i<e;i++){
-    if(D.an[i]===1){const m=D.meta[D.sn[i]-1];t+=`<div class="hfh"><span>${esc(m.ar)}</span></div>`;if(D.sn[i]!==1&&D.sn[i]!==9)t+=`<div class="hfb">${BISM}</div>`;}
-    const ap=ayParts(i,p);t+=`<span class="ay" data-i="${i}">${esc(ap.t)}${ap.num?`<span class="num">${toAr(D.an[i])}</span>`:''}</span> `;
+    if(D.an[i]===1){const m=D.meta[D.sn[i]-1];HFTOK.push({k:'h',h:`<div class="hfh"><span>${esc(m.ar)}</span></div>`});if(D.sn[i]!==1&&D.sn[i]!==9)HFTOK.push({k:'b',h:`<div class="hfb">${BISM}</div>`});}
+    const ap=ayParts(i,p);const ws=ap.t.split(' ').filter(Boolean);
+    ws.forEach((w,j)=>{const lastw=j===ws.length-1;
+      HFTOK.push({k:'w',h:`<span class="ay hw" data-i="${i}">${esc(w)}${lastw&&ap.num?`<span class="num">${toAr(D.an[i])}</span>`:''}</span>`});});
   }
-  const last=e-1,lj=D.an[last]!==D.meta[D.sn[last]-1].count;
   const nameShort=m0.ar.replace(/^سُورَةُ\s*/,'');
-  return `<div class="hf"><div class="hf-top"><span class="ar">${esc(nameShort)} ${toAr(D.sn[s])}</span><span class="big">${paraOfPage(p)}</span><b>${p}</b><span class="big">${p-PARA_PAGE[paraOfPage(p)-1]+1}</span><span class="ar">${esc(para[1])}</span></div><div class="hf-frame"><div class="hf-in" id="hfin"><div id="hft" class="hf-text ar${lj?' lj':''}">${t}</div></div></div><div class="hf-foot ar">منزل ${toAr(manzilOf(D.sn[s]))}</div></div>`;
+  return `<div class="hf"><div class="hf-top"><span class="ar">${esc(nameShort)} ${toAr(D.sn[s])}</span><span class="big">${paraOfPage(p)}</span><b>${p}</b><span class="big">${p-PARA_PAGE[paraOfPage(p)-1]+1}</span><span class="ar">${esc(para[1])}</span></div><div class="hf-frame"><div class="hf-in" id="hfin"><div id="hft" class="hf-text ar"></div></div></div><div class="hf-foot ar">منزل ${toAr(manzilOf(D.sn[s]))}</div></div>`;
 }
-/* choose the biggest font that keeps the page inside 15 ruled lines */
+/* Every printed line is its own fixed-height row, so the ruled lines can never drift away from the text */
 function fitHafezi(){
-  const v=$('#view'),hf=$('.hf'),inn=$('#hfin'),tx=$('#hft');if(!hf||!inn||!tx)return;
+  const v=$('#view'),hf=$('.hf'),inn=$('#hfin'),tx=$('#hft');if(!hf||!inn||!tx||!HFTOK.length)return;
   const availH=v.clientHeight-6-34-4-26;
   const L=Math.max(24,Math.floor((availH-30)/15));
   hf.style.setProperty('--L',L+'px');
   inn.style.height=(L*15)+'px';
   tx.style.lineHeight=L+'px';
-  const h0=tx.querySelector('.hfh');if(h0){h0.style.height='';h0.style.alignItems='';}
+  const W=tx.clientWidth;
+  // hidden measuring row
+  const mz=document.createElement('div');mz.className='ar hf-text';
+  mz.style.cssText='position:absolute;visibility:hidden;left:0;top:0;white-space:nowrap;direction:rtl';
+  mz.innerHTML=HFTOK.filter(t=>t.k==='w').map(t=>t.h.replace('class="ay hw"','class="ay" style="display:inline-block"')).join(' ');
+  inn.appendChild(mz);
+  const spans=[...mz.children];
+  function build(size){
+    mz.style.fontSize=size+'px';
+    const gap=size*0.28,out=[];let cur=null,wi=0;
+    const flush=()=>{if(cur&&cur.w.length)out.push(cur);cur=null;};
+    for(const t of HFTOK){
+      if(t.k!=='w'){flush();out.push({sp:t});continue;}
+      const w=spans[wi++].offsetWidth;
+      if(!cur)cur={w:[],n:0,sum:0};
+      const add=w+(cur.w.length?gap:0);
+      if(cur.w.length&&cur.sum+add>W){flush();cur={w:[],n:0,sum:0};cur.sum=w;cur.w.push({t,w});continue;}
+      cur.sum+=add;cur.w.push({t,w});
+    }
+    flush();return {out,gap};
+  }
   let lo=9,hi=Math.min(L*0.72,56),best=lo;
-  for(let k=0;k<14;k++){const mid=(lo+hi)/2;tx.style.fontSize=mid+'px';if(tx.offsetHeight<=L*15+1){best=mid;lo=mid;}else hi=mid;}
+  for(let k=0;k<12;k++){const mid=(lo+hi)/2;if(build(mid).out.length<=15){best=mid;lo=mid;}else hi=mid;}
+  const R=build(best);
+  inn.removeChild(mz);
   tx.style.fontSize=best+'px';
-  // put the ruled line just under the letters: measure where the baseline really is
+  const lines=R.out;
+  let html='';
+  lines.forEach((ln,idx)=>{
+    if(ln.sp){html+=ln.sp.h;return;}
+    const nxt=lines[idx+1];const runEnd=!nxt||nxt.sp;
+    const short=runEnd&&ln.sum<W*0.6;
+    html+=`<div class="ln ${short?'st':'sb'}">${ln.w.map(x=>x.t.h).join('')}</div>`;
+  });
+  tx.innerHTML=html;
   let ry=L-6;
   try{
     const pb=document.createElement('div');pb.className='ar';
@@ -394,9 +433,9 @@ function fitHafezi(){
     if(base>0&&base<L)ry=Math.min(L-3,Math.round(base+best*0.24));
   }catch(e){}
   tx.style.setProperty('--ry',ry+'px');
-  // short page that starts a surah: grow the title block so the 15 lines are filled (like the printed book)
-  const used=Math.ceil(tx.offsetHeight/L-0.02);
-  if(h0&&used<15&&tx.firstElementChild===h0){h0.style.height=(L*(1+15-used))+'px';h0.style.alignItems='center';}
+  const used=lines.length,h0=tx.firstElementChild;
+  if(h0&&h0.classList.contains('hfh')&&used<15){h0.style.height=(L*(1+15-used))+'px';h0.style.alignItems='center';}
+  const fe=window.__focusEl;if(fe)fe();
 }
 window.addEventListener('resize',()=>{if($('.hf'))fitHafezi();});
 function refText(i){const m=D.meta[D.sn[i]-1];return `${m.en} ${D.sn[i]}:${D.an[i]}`;}
