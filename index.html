@@ -41,7 +41,7 @@ body{background:var(--bg);color:var(--txt);font-family:Roboto,"Noto Sans Bengali
 .hf-text .hfh span{display:flex;align-items:center;justify-content:center;width:100%;height:calc(var(--L) - 8px);margin-bottom:4px;box-sizing:border-box;line-height:1;background:#fff;border:1.5px solid #000;outline:1px solid #000;outline-offset:2px;border-radius:4px}
 .hf-text .hfb{display:block;line-height:var(--L);text-align:center;-webkit-text-stroke:.2px #000}
 .hf-text .num{color:#000;display:inline-block;width:1.5em;height:1.5em;line-height:1.5em;border:1.2px solid #000;border-radius:50%;text-align:center;font-size:.55em;margin:0 .35em;vertical-align:middle;-webkit-text-stroke:0;font-family:Roboto,sans-serif}
-.hf-text .ay.focus{background:rgba(255,213,79,.55)}
+.hf-text .ay.focus{background:rgba(255,213,79,.4);box-shadow:0 0 0 .12em rgba(255,213,79,.4);border-radius:0}
 .hf-text .hfh{width:100%}
 
 /* splash & loader */
@@ -408,7 +408,7 @@ function fitHafezi(){
     }
     flush();return {out,gap};
   }
-  let lo=9,hi=Math.min(L*0.72,56),best=lo;
+  let lo=9,hi=Math.min(L*0.62,52),best=lo;
   for(let k=0;k<12;k++){const mid=(lo+hi)/2;if(build(mid).out.length<=15){best=mid;lo=mid;}else hi=mid;}
   const R=build(best);
   inn.removeChild(mz);
@@ -430,11 +430,11 @@ function fitHafezi(){
     inn.appendChild(pb);
     const base=pb.querySelector('i').getBoundingClientRect().top-pb.getBoundingClientRect().top;
     inn.removeChild(pb);
-    if(base>0&&base<L)ry=Math.min(L-3,Math.round(base+best*0.24));
+    if(base>0&&base<L)ry=Math.min(L-2,Math.round(base+best*0.34));
   }catch(e){}
   tx.style.setProperty('--ry',ry+'px');
   const used=lines.length,h0=tx.firstElementChild;
-  if(h0&&h0.classList.contains('hfh')&&used<15){h0.style.height=(L*(1+15-used))+'px';h0.style.alignItems='center';}
+  if(h0&&h0.classList.contains('hfh')&&used<15&&HFTOK.filter(t=>t.k==='h').length===1){h0.style.height=(L*(1+15-used))+'px';h0.style.alignItems='center';}
   const fe=window.__focusEl;if(fe)fe();
 }
 window.addEventListener('resize',()=>{if($('.hf'))fitHafezi();});
