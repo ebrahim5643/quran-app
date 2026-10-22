@@ -25,7 +25,8 @@ body{background:var(--bg);color:var(--txt);font-family:Roboto,"Noto Sans Bengali
 /* ===== Hafezi style page ===== */
 #view.paper{background:#fff;color:#000}
 .hf{padding:6px 8px 2px;--L:40px}
-.hf-top{display:flex;justify-content:space-between;align-items:center;height:26px;font-size:17px;padding:0 4px;direction:ltr;color:#000}
+.hf-top{display:flex;justify-content:space-between;align-items:center;height:34px;font-size:17px;padding:0 4px;direction:ltr;color:#000}
+.hf-top .big{font-size:26px;font-family:Roboto,sans-serif;font-weight:400}
 .hf-top b{font-size:15px;font-weight:600;color:#444;font-family:Roboto,sans-serif}
 .hf-foot{height:24px;line-height:24px;text-align:center;font-size:17px;color:#000;margin-top:2px}
 .hf-frame{padding:13px;background:#fff url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2713%27%20height%3D%2713%27%3E%3Crect%20width%3D%2713%27%20height%3D%2713%27%20fill%3D%27white%27%2F%3E%3Cpolygon%20points%3D%276.5%2C0.4%208.1%2C4.9%2012.6%2C6.5%208.1%2C8.1%206.5%2C12.6%204.9%2C8.1%200.4%2C6.5%204.9%2C4.9%27%20fill%3D%27black%27%2F%3E%3Ccircle%20cx%3D%276.5%27%20cy%3D%276.5%27%20r%3D%271.3%27%20fill%3D%27white%27%2F%3E%3C%2Fsvg%3E") repeat;background-size:13px 13px;border:1px solid #000}
@@ -368,12 +369,12 @@ function hafeziHTML(p,s,e){
   }
   const last=e-1,lj=D.an[last]!==D.meta[D.sn[last]-1].count;
   const nameShort=m0.ar.replace(/^سُورَةُ\s*/,'');
-  return `<div class="hf"><div class="hf-top"><span class="ar">${esc(nameShort)} ${toAr(D.sn[s])}</span><b>${p}</b><span class="ar">${esc(para[1])} ${toAr(paraOfPage(p))}</span></div><div class="hf-frame"><div class="hf-in" id="hfin"><div id="hft" class="hf-text ar${lj?' lj':''}">${t}</div></div></div><div class="hf-foot ar">منزل ${toAr(manzilOf(D.sn[s]))}</div></div>`;
+  return `<div class="hf"><div class="hf-top"><span class="ar">${esc(nameShort)} ${toAr(D.sn[s])}</span><span class="big">${paraOfPage(p)}</span><b>${p}</b><span class="big">${p-PARA_PAGE[paraOfPage(p)-1]+1}</span><span class="ar">${esc(para[1])}</span></div><div class="hf-frame"><div class="hf-in" id="hfin"><div id="hft" class="hf-text ar${lj?' lj':''}">${t}</div></div></div><div class="hf-foot ar">منزل ${toAr(manzilOf(D.sn[s]))}</div></div>`;
 }
 /* choose the biggest font that keeps the page inside 15 ruled lines */
 function fitHafezi(){
   const v=$('#view'),hf=$('.hf'),inn=$('#hfin'),tx=$('#hft');if(!hf||!inn||!tx)return;
-  const availH=v.clientHeight-6-26-4-26;
+  const availH=v.clientHeight-6-34-4-26;
   const L=Math.max(24,Math.floor((availH-30)/15));
   hf.style.setProperty('--L',L+'px');
   inn.style.height=(L*15)+'px';
