@@ -37,6 +37,7 @@ body{background:var(--bg);color:var(--txt);font-family:Roboto,"Noto Sans Bengali
 .hf-text .ln{display:flex;direction:rtl;white-space:nowrap}
 .hf-text .ln.sb{justify-content:space-between}
 .hf-text .ln.st{justify-content:flex-start;gap:.28em}
+.hf-text .nq{display:inline-block;font-size:.62em;margin:0 .3em;line-height:1;vertical-align:.1em;-webkit-text-stroke:.3px #000}
 .hf-text .wq{display:inline-block;font-size:.72em;margin:0 .45em;vertical-align:.45em;line-height:1;-webkit-text-stroke:.3px #000}
 .hf-text .hw{position:relative;top:var(--dy,0px);display:block;height:var(--L);line-height:var(--L);white-space:nowrap;flex:none}
 .hf-text .hfh{display:flex;align-items:flex-end;height:var(--L);padding:0;background:#fff;-webkit-text-stroke:0}
@@ -219,9 +220,27 @@ function ayParts(i,p){ // text and whether the end-number belongs on this page
   if(D.sn[i]===SPLIT.sn&&D.an[i]===SPLIT.an){const [a,b]=splitWords(i);if(p===SPLIT.p)return {t:a,num:false};if(p===SPLIT.p+1)return {t:b,num:true};}
   return {t:D.ar[i],num:true};
 }
+const JZ_L=/[\u0628\u062A\u062B\u062C\u062D\u062E\u062F\u0630\u0631\u0632\u0633\u0634\u0635\u0636\u0637\u0638\u0639\u063A\u0641\u0642\u0643\u0644\u0645\u0646\u0647]/;
+const JZ_M=/[\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/;
+function jazmWord(w){
+  if(!/[\u064B-\u0652\u0670]/.test(w))return w; // bare letters (muqatta'at) untouched
+  if(/[^\u0627]\u0653/.test(w.replace(/[\u064B-\u0652\u0670\u0654\u0655]/g,'')))return w;
+  let o='';
+  for(let i=0;i<w.length;i++){
+    const c=w[i];o+=c;
+    if(!JZ_L.test(c))continue;
+    const n=w[i+1];
+    if(n!==undefined&&JZ_M.test(n))continue;
+    if(c==='\u0644'&&w[i-1]==='\u0627'){const pre=w.slice(0,i-1);if(!/[\u0621-\u064A]/.test(pre.replace(/[\u0648\u0641\u0628\u0643\u0644]/g,'').replace(/[\u064B-\u0652]/g,'')))continue;}
+    o+='\u0652';
+  }
+  return o;
+}
 function fixText(t){
   const DIA='[ً-ْٓ-ٕٖ-ٰٟۖ-ۭ]';
   t=t.replace(/\u065E/g,'\u064C').replace(/\u08F0/g,'\u064B').replace(/\u08F1/g,'\u064C').replace(/\u08F2/g,'\u064D').replace(/\u0658/g,'').replace(/[\u065B-\u065F]/g,'');
+  // tanween followed by hamzat-wasl: small noon between the words
+  t=t.replace(/((?:[\u0654\u0655\u0640]*[\u064B-\u064D\u0656\u0657\u08F0-\u08F2][\u0654\u0655]*[\u0627\u0649]?)) (?=\u0671)/g,'$1 \u06E8 ');
   t=t.replace(/ٱ/g,'ا').replace(/ۡ/g,'ْ')
     .replace(/ـ[َٔ]{2}ا/g,'آ')
     .replace(/ءَا/g,'آ')
@@ -236,9 +255,13 @@ function fixText(t){
   t=t.replace(/[ۭۢ]/g,(m,off,str)=>{
     const rest=str.slice(off+1).replace(/^[\sۖ-ۜ]+/,'').replace(new RegExp('^'+DIA+'+'),'');
     return /^ب/.test(rest)?m:'';});
-  // ikhfa: bare noon/meem gets jazm
-  t=t.replace(/([نم])(?![ً-ْٰۖ-ۭ])(?=[ ]*[ۖ-ۜ]?[ ]*[تثجدذزسشصضطظفقك])/g,(m,c,off,str)=>c==='م'?m:c+'ْ');
-  t=t.replace(/م(?![ً-ْٰۖ-ۭ])(?= ?ب)/g,'مْ');
+  // idgham before ya/waw: the following letter takes shadda (noon bare, or tanween)
+  t=t.replace(/(\u0646)(?![\u064B-\u0652\u0670\u06D6-\u06ED]) ([\u064A\u0648])(?=[\u064E\u064F\u0650])/g,'$1 $2\u0651')
+   .replace(/([\u064B-\u064D]\u0627?) ([\u064A\u0648])(?=[\u064E\u064F\u0650])/g,'$1 $2\u0651');
+  // izhar: bare noon/meem before throat letters/hamza gets jazm
+  t=t.replace(/([\u0646\u0645])(?![\u064B-\u0652\u0653\u0670\u06D6-\u06ED])(?=[ ]*[\u0621\u0623\u0625\u0624\u0626\u0647\u0639\u062D\u063A\u062E])/g,'$1\u0652');
+  // Indo-Pak: every sakin consonant carries jazm (Uthmani leaves idgham/ikhfa/iqlab letters bare)
+  t=t.replace(/أُوْل/g,'أُول').split(' ').map(jazmWord).join(' ');
   // silent alef after waw (jama): no mark;  illa: plain alef
   t=t.replace(/(\u0648)(\u064F?)\u0627[\u0652\u06DF]/g,'$1$2\u0627').replace(/\u0627[\u0652\u06DF]/g,'\u0627');
   t=t.replace(/(\u0644[\u064E\u0651]{1,2})\u0627\u0653/g,'$1\u0627');
@@ -405,8 +428,8 @@ function hafeziHTML(p,s,e){
     if(D.an[i]===1){const m=D.meta[D.sn[i]-1];HFTOK.push({k:'h',h:`<div class="hfh"><span>${esc(m.ar)}</span></div>`});if(D.sn[i]!==1&&D.sn[i]!==9)HFTOK.push({k:'b',h:`<div class="hfb">${BISM}</div>`});}
     const ap=ayParts(i,p);const ws=ap.t.split(' ').filter(Boolean);
     ws.forEach((w,j)=>{const lastw=j===ws.length-1;
-      if(/^[\u06D6-\u06DC]+$/.test(w)){
-        const sg=[...w].map(c=>`<span class="wq">${WAQF[c]||''}</span>`).join('');
+      if(/^[\u06D6-\u06DC\u06E8]+$/.test(w)){
+        const sg=[...w].map(c=>c==='\u06E8'?'<span class="nq">نِ</span>':`<span class="wq">${WAQF[c]||''}</span>`).join('');
         const pv=HFTOK[HFTOK.length-1];
         if(pv&&pv.k==='w'&&pv.h.endsWith('</span>')&&!pv.h.includes('class="num"')){pv.h=pv.h.slice(0,-7)+sg+'</span>';return;}
       }
