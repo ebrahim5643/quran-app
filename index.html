@@ -219,7 +219,7 @@ function ayParts(i,p){ // text and whether the end-number belongs on this page
   return {t:D.ar[i],num:true};
 }
 function fixText(t){
-  return t.replace(/\u06E1/g,'\u0652')
+  return t.replace(/\u0671/g,'\u0627').replace(/\u06E1/g,'\u0652')
     .replace(/\u064E\u0640?\u0670/g,'\u0670')
     .replace(/\u064E([\u0648\u0649\u064A])\u0670/g,'\u0670$1')
     .replace(/\u0650\u0640?\u0656/g,'\u0656')
@@ -432,7 +432,7 @@ function fitHafezi(){
     html+=`<div class="ln ${short?'st':'sb'}">${ln.w.map(x=>x.t.h).join('')}</div>`;
   });
   tx.innerHTML=html;
-  let ry=L-6;
+  let ry=L-2;
   try{
     const pb=document.createElement('div');pb.className='ar';
     pb.style.cssText='position:absolute;visibility:hidden;direction:rtl;white-space:nowrap;font-size:'+best+'px;line-height:'+L+'px;left:0;top:0';
@@ -440,7 +440,7 @@ function fitHafezi(){
     inn.appendChild(pb);
     const base=pb.querySelector('i').getBoundingClientRect().top-pb.getBoundingClientRect().top;
     inn.removeChild(pb);
-    if(base>0&&base<2*L){ry=L-4;tx.style.setProperty('--dy',Math.round((L-4-best*0.38)-base)+'px');}
+    if(base>0&&base<2*L){ry=L-2;tx.style.setProperty('--dy',Math.round((L/2+best*0.17)-base)+'px');}
   }catch(e){}
   tx.style.setProperty('--ry',ry+'px');
   const used=lines.length,h0=tx.firstElementChild;
