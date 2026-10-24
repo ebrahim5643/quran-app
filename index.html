@@ -228,7 +228,8 @@ function jazmWord(w){
   let o='';
   for(let i=0;i<w.length;i++){
     const c=w[i];o+=c;
-    if(!JZ_L.test(c))continue;
+    const dip=i>=2&&((( c==='\u0648'||c==='\u064A')&&w[i-1]==='\u064E')||(c==='\u0648'&&w[i-1]==='\u064F')||((c==='\u064A'||c==='\u0649')&&w[i-1]==='\u0650'));
+    if(!JZ_L.test(c)&&!dip)continue;
     const n=w[i+1];
     if(n!==undefined&&JZ_M.test(n))continue;
     if(c==='\u0644'&&w[i-1]==='\u0627'){const pre=w.slice(0,i-1);if(!/[\u0621-\u064A]/.test(pre.replace(/[\u0648\u0641\u0628\u0643\u0644]/g,'').replace(/[\u064B-\u0652]/g,'')))continue;}
