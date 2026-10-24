@@ -37,6 +37,7 @@ body{background:var(--bg);color:var(--txt);font-family:Roboto,"Noto Sans Bengali
 .hf-text .ln{display:flex;direction:rtl;white-space:nowrap}
 .hf-text .ln.sb{justify-content:space-between}
 .hf-text .ln.st{justify-content:flex-start;gap:.28em}
+.hf-text .wq{display:inline-block;font-size:.72em;margin:0 .45em;vertical-align:.45em;line-height:1;-webkit-text-stroke:.3px #000}
 .hf-text .hw{position:relative;top:var(--dy,0px);display:block;height:var(--L);line-height:var(--L);white-space:nowrap;flex:none}
 .hf-text .hfh{display:flex;align-items:flex-end;height:var(--L);padding:0;background:#fff;-webkit-text-stroke:0}
 .hf-text .hfh span{display:flex;align-items:center;justify-content:center;width:100%;height:calc(var(--L) - 8px);margin-bottom:4px;box-sizing:border-box;line-height:1;background:#fff;border:1.5px solid #000;outline:1px solid #000;outline-offset:2px;border-radius:4px}
@@ -219,12 +220,31 @@ function ayParts(i,p){ // text and whether the end-number belongs on this page
   return {t:D.ar[i],num:true};
 }
 function fixText(t){
-  return t.replace(/\u0671/g,'\u0627').replace(/\u06E1/g,'\u0652')
-    .replace(/\u064E\u0640?\u0670/g,'\u0670')
-    .replace(/\u064E([\u0648\u0649\u064A])\u0670/g,'\u0670$1')
-    .replace(/\u0650\u0640?\u0656/g,'\u0656')
-    .replace(/\u064F\u06E5/g,'\u0657')
-    .replace(/\u0650\u06E6/g,'\u0656');
+  const DIA='[ً-ْٓ-ٕٖ-ٰٟۖ-ۭ]';
+  t=t.replace(/\u065E/g,'\u064C').replace(/\u08F0/g,'\u064B').replace(/\u08F1/g,'\u064C').replace(/\u08F2/g,'\u064D').replace(/\u0658/g,'').replace(/[\u065B-\u065F]/g,'');
+  t=t.replace(/ٱ/g,'ا').replace(/ۡ/g,'ْ')
+    .replace(/ـ[َٔ]{2}ا/g,'آ')
+    .replace(/ءَا/g,'آ')
+    .replace(/َـ?ٰ/g,'ٰ')
+    .replace(/َ([وىي])ٰ/g,'ٰ$1')
+    .replace(/ِـ?ٖ/g,'ٖ')
+    .replace(/ُۥ/g,'ٗ')
+    .replace(/ِۦ/g,'ٖ');
+  // Allah: standing fatha on the second lam
+  t=t.replace(/(ال|لِ)ل(?:َّ|َّ|ّ)(?=ه)/g,'$1لّٰ');
+  // small meem (iqlab) only before ba
+  t=t.replace(/[ۭۢ]/g,(m,off,str)=>{
+    const rest=str.slice(off+1).replace(/^[\sۖ-ۜ]+/,'').replace(new RegExp('^'+DIA+'+'),'');
+    return /^ب/.test(rest)?m:'';});
+  // ikhfa: bare noon/meem gets jazm
+  t=t.replace(/([نم])(?![ً-ْٰۖ-ۭ])(?=[ ]*[ۖ-ۜ]?[ ]*[تثجدذزسشصضطظفقك])/g,(m,c,off,str)=>c==='م'?m:c+'ْ');
+  t=t.replace(/م(?![ً-ْٰۖ-ۭ])(?= ?ب)/g,'مْ');
+  // silent alef after waw (jama): no mark;  illa: plain alef
+  t=t.replace(/(\u0648)(\u064F?)\u0627[\u0652\u06DF]/g,'$1$2\u0627').replace(/\u0627[\u0652\u06DF]/g,'\u0627');
+  t=t.replace(/(\u0644[\u064E\u0651]{1,2})\u0627\u0653/g,'$1\u0627');
+  // waqf signs always stand alone as separate tokens
+  t=t.replace(/\s*([\u06D6-\u06DC])\s*/g,' $1 ').replace(/\s{2,}/g,' ').trim();
+  return t;
 }
 function index(){
   D.ar=D.ar.map(fixText);
@@ -376,6 +396,7 @@ function viewPage(p,focus,hlParam){
 }
 
 let HFTOK=[];
+const WAQF={'\u06D6':'صلے','\u06D7':'قلے','\u06D8':'م','\u06D9':'لا','\u06DA':'ج','\u06DB':'∴','\u06DC':'س'};
 function hafeziHTML(p,s,e){
   const m0=D.meta[D.sn[s]-1];
   const para=PARA[paraOfPage(p)-1]||['',''];
@@ -384,6 +405,11 @@ function hafeziHTML(p,s,e){
     if(D.an[i]===1){const m=D.meta[D.sn[i]-1];HFTOK.push({k:'h',h:`<div class="hfh"><span>${esc(m.ar)}</span></div>`});if(D.sn[i]!==1&&D.sn[i]!==9)HFTOK.push({k:'b',h:`<div class="hfb">${BISM}</div>`});}
     const ap=ayParts(i,p);const ws=ap.t.split(' ').filter(Boolean);
     ws.forEach((w,j)=>{const lastw=j===ws.length-1;
+      if(/^[\u06D6-\u06DC]+$/.test(w)){
+        const sg=[...w].map(c=>`<span class="wq">${WAQF[c]||''}</span>`).join('');
+        const pv=HFTOK[HFTOK.length-1];
+        if(pv&&pv.k==='w'&&pv.h.endsWith('</span>')&&!pv.h.includes('class="num"')){pv.h=pv.h.slice(0,-7)+sg+'</span>';return;}
+      }
       HFTOK.push({k:'w',h:`<span class="ay hw" data-i="${i}">${esc(w)}${lastw&&ap.num?`<span class="num">${toAr(D.an[i])}</span>`:''}</span>`});});
   }
   const nameShort=m0.ar.replace(/^سُورَةُ\s*/,'');
@@ -401,7 +427,7 @@ function fitHafezi(){
   // hidden measuring row
   const mz=document.createElement('div');mz.className='ar hf-text';
   mz.style.cssText='position:absolute;visibility:hidden;left:0;top:0;white-space:nowrap;direction:rtl';
-  mz.innerHTML=HFTOK.filter(t=>t.k==='w').map(t=>t.h.replace('class="ay hw"','class="ay" style="display:inline-block"')).join(' ');
+  mz.innerHTML=HFTOK.filter(t=>t.k==='w').map(t=>t.h.replace(/class="ay hw[^"]*"/,'class="ay" style="display:inline-block"')).join(' ');
   inn.appendChild(mz);
   const spans=[...mz.children];
   function build(size){
