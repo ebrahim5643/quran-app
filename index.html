@@ -224,34 +224,37 @@ const JZ_L=/[\u0628\u062A\u062B\u062C\u062D\u062E\u062F\u0630\u0631\u0632\u0633\
 const JZ_M=/[\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/;
 function jazmWord(w){
   if(!/[\u064B-\u0652\u0670]/.test(w))return w; // bare letters (muqatta'at) untouched
-  if(/[^\u0627]\u0653/.test(w.replace(/[\u064B-\u0652\u0670\u0654\u0655]/g,'')))return w;
   let o='';
   for(let i=0;i<w.length;i++){
     const c=w[i];o+=c;
     const dip=i>=2&&((( c==='\u0648'||c==='\u064A')&&w[i-1]==='\u064E')||(c==='\u0648'&&w[i-1]==='\u064F')||((c==='\u064A'||c==='\u0649')&&w[i-1]==='\u0650'));
     if(!JZ_L.test(c)&&!dip)continue;
     const n=w[i+1];
-    if(n!==undefined&&JZ_M.test(n))continue;
+    if(n!==undefined&&JZ_M.test(n)&&!(dip&&n==='\u0653'))continue;
     if(c==='\u0644'&&w[i-1]==='\u0627'){const pre=w.slice(0,i-1);if(!/[\u0621-\u064A]/.test(pre.replace(/[\u0648\u0641\u0628\u0643\u0644]/g,'').replace(/[\u064B-\u0652]/g,'')))continue;}
     o+='\u0652';
   }
   return o;
 }
 function fixText(t){
+  t=t.replace(/\s*\u06DE\s*/g,' ').trim(); // rub-el-hizb marks are not part of this mushaf layout
+  // waqf signs always stand alone as separate tokens (before anything else looks at word endings)
+  t=t.replace(/\s*([\u06D6-\u06DC])\s*/g,' $1 ').replace(/\s{2,}/g,' ').trim();
   const DIA='[ً-ْٓ-ٕٖ-ٰٟۖ-ۭ]';
+  t=t.replace(/(?<!\u064F)\u0657/g,'\u064B').replace(/(?<!\u0650)\u0656/g,'\u064D');
   t=t.replace(/\u065E/g,'\u064C').replace(/\u08F0/g,'\u064B').replace(/\u08F1/g,'\u064C').replace(/\u08F2/g,'\u064D').replace(/\u0658/g,'').replace(/[\u065B-\u065F]/g,'');
   // tanween followed by hamzat-wasl: small noon between the words
   t=t.replace(/((?:[\u0654\u0655\u0640]*[\u064B-\u064D\u0656\u0657\u08F0-\u08F2][\u0654\u0655]*[\u0627\u0649]?)) (?=\u0671)/g,'$1 \u06E8 ');
-  t=t.replace(/ٱ/g,'ا').replace(/ۡ/g,'ْ')
+  t=t.replace(/ٱ/g,'ا').replace(/ۡ/g,'ْ').replace(/أٓ/g,'آ')
     .replace(/ـ[َٔ]{2}ا/g,'آ')
-    .replace(/ءَا/g,'آ')
-    .replace(/َـ?ٰ/g,'ٰ')
+    .replace(/ءَآ/g,'آ').replace(/ءَا/g,'آ')
     .replace(/َ([وىي])ٰ/g,'ٰ$1')
+    .replace(/َـ?ٰ/g,'ٰ')
     .replace(/ِـ?ٖ/g,'ٖ')
     .replace(/ُۥ/g,'ٗ')
     .replace(/ِۦ/g,'ٖ');
   // Allah: standing fatha on the second lam
-  t=t.replace(/(ال|لِ)ل(?:َّ|َّ|ّ)(?=ه)/g,'$1لّٰ');
+  t=t.replace(/(\u0644\u0650?)\u0644[\u064E\u0651]{1,2}(?=\u0647)/g,'$1\u0644\u0651\u0670');
   // small meem (iqlab) only before ba
   t=t.replace(/[ۭۢ]/g,(m,off,str)=>{
     const rest=str.slice(off+1).replace(/^[\sۖ-ۜ]+/,'').replace(new RegExp('^'+DIA+'+'),'');
@@ -266,8 +269,6 @@ function fixText(t){
   // silent alef after waw (jama): no mark;  illa: plain alef
   t=t.replace(/(\u0648)(\u064F?)\u0627[\u0652\u06DF]/g,'$1$2\u0627').replace(/\u0627[\u0652\u06DF]/g,'\u0627');
   t=t.replace(/(\u0644[\u064E\u0651]{1,2})\u0627\u0653/g,'$1\u0627');
-  // waqf signs always stand alone as separate tokens
-  t=t.replace(/\s*([\u06D6-\u06DC])\s*/g,' $1 ').replace(/\s{2,}/g,' ').trim();
   return t;
 }
 function index(){
@@ -625,6 +626,7 @@ function showMore(){
 function viewSettings(){
   setBar('Settings');
   $('#view').innerHTML=`<div class="set">
+  <div class="card"><h3>App version</h3><div style="font-size:13px;opacity:.7">Text rules v12 · 2026-10-25</div></div>
   <div class="card"><h3>Font size (Simple স্টাইল)</h3><div class="prev ar" id="pv2" style="font-size:${S.font}px">${BISM}</div><input type="range" id="fs" min="20" max="52" value="${S.font}"></div>
   <div class="card"><h3>Reading style</h3><div class="chips" style="margin:0"><span class="chip ${S.style!=='simple'?'on':''}" id="st1">Hafezi (১৫ লাইন, তারা-নকশা)</span><span class="chip ${S.style==='simple'?'on':''}" id="st2">Simple</span></div><div class="small" style="margin-top:8px">Hafezi স্টাইলে লেখার সাইজ নিজে থেকেই পেজে ফিট হয়। অনুবাদ চালু থাকলে পেজ Simple স্টাইলে দেখাবে।</div></div>
   <div class="card"><h3>Theme</h3><div class="line2"><span>Light mode</span><label class="sw"><input type="checkbox" id="th" ${S.theme==='light'?'checked':''}><i></i></label></div></div>
