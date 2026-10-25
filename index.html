@@ -4,7 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#303f9f">
-<title>Quran Reader</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="512x512" href="quran-app-icon-512.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Hafizi Quran · Hifz Practice</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&display=swap" rel="stylesheet">
 <style>
@@ -55,11 +59,35 @@ body{background:var(--bg);color:var(--txt);font-family:Roboto,"Noto Sans Bengali
 @keyframes sp{to{transform:rotate(360deg)}}
 .msg{color:var(--sub);line-height:1.6;max-width:320px}
 
+/* Exact page scans from the user's supplied 614-page Emdadia PDF */
+.pdfview{padding:8px 8px 18px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.pdfscan{display:block;width:100%;height:auto;max-height:calc(100vh - 150px);object-fit:contain;background:#fff;box-shadow:0 2px 10px #0004;touch-action:pan-y;}
+.pdfscan.zoomed{width:160%;max-width:none;max-height:none;}
+.pdfhint{font-size:12px;color:var(--sub);text-align:center;padding:2px 8px}.pdfactions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.pdfactions button{border:1px solid var(--gold);border-radius:9px;padding:9px 13px;background:var(--btn);color:var(--btnTxt);font-size:14px}.cacheprogress{font-size:12px;color:var(--sub);margin-top:8px;line-height:1.5}
+.pdffoot{position:sticky;bottom:0;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 12px;background:var(--bg);border-top:1px solid var(--line);z-index:3}
+.pdffoot button{border:0;border-radius:8px;padding:10px 18px;background:var(--btn);color:var(--btnTxt);font-size:18px}
+.pdffoot input{width:72px;background:var(--item);color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:8px;text-align:center;font-size:16px}
 /* menu */
-.menu{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;gap:11px;padding:20px}
-.mb{width:min(88%,380px);height:50px;border:0;border-radius:11px;background:var(--btn);color:var(--btnTxt);font-size:21px;font-weight:700;letter-spacing:.2px}
+.menu{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;gap:12px;padding:24px 16px 30px}
+.mb{width:min(92%,460px);min-height:58px;height:auto;padding:12px 10px;border:0;border-radius:17px;background:var(--btn);color:var(--btnTxt);font-size:20px;font-weight:650;letter-spacing:.1px;line-height:1.25}
 .mb:active{filter:brightness(.85)}
 .mb.new{outline:2px solid var(--gold)}
+.menuhead{font-size:13px;color:var(--sub);text-align:center;margin:0 0 3px;line-height:1.6}
+.hifzwrap{padding:14px;max-width:620px;margin:auto}
+.hifzhero{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;text-align:center;margin-bottom:12px}
+.hifzhero h2{margin:0 0 6px;font-size:21px}
+.hifzhero p{margin:0;color:var(--sub);font-size:13px;line-height:1.6}
+.hifzgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.hifzstat{background:var(--item);border-radius:12px;padding:12px;text-align:center}
+.hifzstat b{display:block;font-size:26px;margin-bottom:3px}
+.hifzstat span{font-size:12px;color:var(--sub)}
+.hifzbtn{width:100%;min-height:46px;border:0;border-radius:10px;background:var(--btn);color:var(--btnTxt);font-size:16px;font-weight:650;padding:10px;margin:5px 0}
+.hifzbtn.primary{background:var(--bar);color:white}
+.hifzinput{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--txt);font-size:18px}
+.hifzscanbox{position:relative;margin:10px 0;background:#fff;border-radius:8px;overflow:hidden}
+.hifzscanbox img{display:block;width:100%;height:auto;max-height:58vh;object-fit:contain}
+.hifzcover{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#202124;color:#fff;text-align:center;padding:24px;font-size:20px;font-weight:700;letter-spacing:.3px}
+.hifzsmall{font-size:12px;color:var(--sub);line-height:1.6}
 
 /* lists */
 .row{display:flex;align-items:center;margin:7px 8px;padding:10px 12px;background:var(--item);border-radius:4px;min-height:54px;gap:12px}
@@ -176,9 +204,10 @@ async function idbGet(k){const d=await idb();return new Promise((res,rej)=>{cons
 async function idbSet(k,v){const d=await idb();return new Promise((res,rej)=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error);});}
 async function idbDel(k){const d=await idb();return new Promise((res,rej)=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').delete(k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error);});}
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
-let S=Object.assign({font:30,theme:'dark',showTr:false,style:'hafezi'},LS.get('q_settings',{}));
+let S=Object.assign({font:30,theme:'light',showTr:false,style:'hafezi'},LS.get('q_settings',{}));
 let BM=LS.get('q_bm',[]);
-const saveS=()=>LS.set('q_settings',S), saveBM=()=>LS.set('q_bm',BM);
+let PDFBM=LS.get('q_pdf_bm',[]).filter(n=>Number.isInteger(n)&&n>=1&&n<=614);
+const saveS=()=>LS.set('q_settings',S), saveBM=()=>LS.set('q_bm',BM), savePDFBM=()=>LS.set('q_pdf_bm',PDFBM);
 function applyTheme(){document.body.classList.toggle('light',S.theme==='light');}
 
 /* ================= data ================= */
@@ -224,37 +253,33 @@ const JZ_L=/[\u0628\u062A\u062B\u062C\u062D\u062E\u062F\u0630\u0631\u0632\u0633\
 const JZ_M=/[\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/;
 function jazmWord(w){
   if(!/[\u064B-\u0652\u0670]/.test(w))return w; // bare letters (muqatta'at) untouched
+  if(/[^\u0627]\u0653/.test(w.replace(/[\u064B-\u0652\u0670\u0654\u0655]/g,'')))return w;
   let o='';
   for(let i=0;i<w.length;i++){
     const c=w[i];o+=c;
-    const dip=i>=2&&((( c==='\u0648'||c==='\u064A')&&w[i-1]==='\u064E')||(c==='\u0648'&&w[i-1]==='\u064F')||((c==='\u064A'||c==='\u0649')&&w[i-1]==='\u0650'));
-    if(!JZ_L.test(c)&&!dip)continue;
+    if(!JZ_L.test(c))continue;
     const n=w[i+1];
-    if(n!==undefined&&JZ_M.test(n)&&!(dip&&n==='\u0653'))continue;
+    if(n!==undefined&&JZ_M.test(n))continue;
     if(c==='\u0644'&&w[i-1]==='\u0627'){const pre=w.slice(0,i-1);if(!/[\u0621-\u064A]/.test(pre.replace(/[\u0648\u0641\u0628\u0643\u0644]/g,'').replace(/[\u064B-\u0652]/g,'')))continue;}
     o+='\u0652';
   }
   return o;
 }
 function fixText(t){
-  t=t.replace(/\s*\u06DE\s*/g,' ').trim(); // rub-el-hizb marks are not part of this mushaf layout
-  // waqf signs always stand alone as separate tokens (before anything else looks at word endings)
-  t=t.replace(/\s*([\u06D6-\u06DC])\s*/g,' $1 ').replace(/\s{2,}/g,' ').trim();
   const DIA='[ً-ْٓ-ٕٖ-ٰٟۖ-ۭ]';
-  t=t.replace(/(?<!\u064F)\u0657/g,'\u064B').replace(/(?<!\u0650)\u0656/g,'\u064D');
   t=t.replace(/\u065E/g,'\u064C').replace(/\u08F0/g,'\u064B').replace(/\u08F1/g,'\u064C').replace(/\u08F2/g,'\u064D').replace(/\u0658/g,'').replace(/[\u065B-\u065F]/g,'');
   // tanween followed by hamzat-wasl: small noon between the words
   t=t.replace(/((?:[\u0654\u0655\u0640]*[\u064B-\u064D\u0656\u0657\u08F0-\u08F2][\u0654\u0655]*[\u0627\u0649]?)) (?=\u0671)/g,'$1 \u06E8 ');
-  t=t.replace(/ٱ/g,'ا').replace(/ۡ/g,'ْ').replace(/أٓ/g,'آ')
+  t=t.replace(/ٱ/g,'ا').replace(/ۡ/g,'ْ')
     .replace(/ـ[َٔ]{2}ا/g,'آ')
-    .replace(/ءَآ/g,'آ').replace(/ءَا/g,'آ')
-    .replace(/َ([وىي])ٰ/g,'ٰ$1')
+    .replace(/ءَا/g,'آ')
     .replace(/َـ?ٰ/g,'ٰ')
+    .replace(/َ([وىي])ٰ/g,'ٰ$1')
     .replace(/ِـ?ٖ/g,'ٖ')
     .replace(/ُۥ/g,'ٗ')
     .replace(/ِۦ/g,'ٖ');
   // Allah: standing fatha on the second lam
-  t=t.replace(/(\u0644\u0650?)\u0644[\u064E\u0651]{1,2}(?=\u0647)/g,'$1\u0644\u0651\u0670');
+  t=t.replace(/(ال|لِ)ل(?:َّ|َّ|ّ)(?=ه)/g,'$1لّٰ');
   // small meem (iqlab) only before ba
   t=t.replace(/[ۭۢ]/g,(m,off,str)=>{
     const rest=str.slice(off+1).replace(/^[\sۖ-ۜ]+/,'').replace(new RegExp('^'+DIA+'+'),'');
@@ -269,6 +294,8 @@ function fixText(t){
   // silent alef after waw (jama): no mark;  illa: plain alef
   t=t.replace(/(\u0648)(\u064F?)\u0627[\u0652\u06DF]/g,'$1$2\u0627').replace(/\u0627[\u0652\u06DF]/g,'\u0627');
   t=t.replace(/(\u0644[\u064E\u0651]{1,2})\u0627\u0653/g,'$1\u0627');
+  // waqf signs always stand alone as separate tokens
+  t=t.replace(/\s*([\u06D6-\u06DC])\s*/g,' $1 ').replace(/\s{2,}/g,' ').trim();
   return t;
 }
 function index(){
@@ -324,13 +351,17 @@ const go=(h,replace)=>{if(replace)location.replace(h);else location.hash=h;};
 function setBar(title,show=true){$('#bar').style.display=show?'flex':'none';$('#ttl').textContent=title;}
 $('#back').onclick=()=>{if(history.length>1)history.back();else location.hash='#/';};
 function route(){
-  if(!D)return;
   closeSheet();
-  const oldf=$('#foot');if(oldf)oldf.remove();$('#view').classList.remove('paper');
+  const oldf=$('#foot');if(oldf)oldf.remove();const oldPdf=$('#pdffoot');if(oldPdf)oldPdf.remove();$('#view').classList.remove('paper');
   const h=(location.hash||'#/').slice(1);
   const [path,qs]=h.split('?');const q=new URLSearchParams(qs||'');
   const parts=path.split('/').filter(Boolean);
   const v=$('#view');v.scrollTop=0;
+  if(parts[0]==='pdf')return viewPdfPage(parseInt(parts[1])||1);
+  if(parts[0]==='hifz')return viewHifz();
+  if(parts[0]==='progress')return viewProgress();
+  if(parts[0]==='load')return enableTextFeatures();
+  if(!D)return viewMenu();
   switch(parts[0]){
     case 'surah':return viewSurah();
     case 'para':return viewPara();
@@ -347,9 +378,31 @@ window.addEventListener('hashchange',route);
 /* ================= views ================= */
 function viewMenu(){
   setBar('',false);
-  const items=[['surah','SURAH INDEX'],['para','PARA INDEX'],['goto','GO TO PAGE'],['bookmarks','BOOKMARKS'],['search','WORD SEARCH'],['settings','SETTINGS']];
-  $('#view').innerHTML='<div class="menu">'+items.map(([k,l])=>`<button class="mb${k==='search'?' new':''}" data-k="${k}">${l}</button>`).join('')+'</div>';
-  $('#view').querySelectorAll('.mb').forEach(b=>b.onclick=()=>go('#/'+b.dataset.k));
+  const items=[['pdf','READ QURAN · ORIGINAL PDF (614 PAGES)'],['surah','SURAH INDEX'],['para','PARA INDEX'],['goto','GO TO PAGE'],['bookmarks','BOOKMARKS'],['search','WORD SEARCH'],['hifz','HIFZ PRACTICE'],['progress','PROGRESS & DAILY GOAL'],['settings','SETTINGS']];
+  $('#view').innerHTML='<div class="menu"><div class="menuhead">হাফিজি কোরআন শরীফ · মূল PDF-এর পৃষ্ঠা অক্ষুণ্ণ রাখা হয়েছে</div>'+items.map(([k,l])=>`<button class="mb${k==='pdf'?' new':''}" data-k="${k}">${l}</button>`).join('')+'<button class="mb" data-k="load">ENABLE SURAH/PARA INDEX & WORD SEARCH</button><div class="pdfhint">মূল PDF-এর ৬১৪ পৃষ্ঠা অফলাইনে দেখা যাবে। অনলাইন টেক্সটের সূচি PDF-এর সঙ্গে সম্পূর্ণ যাচাই না হওয়া পর্যন্ত পৃষ্ঠা মিলিয়ে নেওয়ার জন্য মূল PDF-ই ব্যবহার করুন।</div></div>';
+  $('#view').querySelectorAll('.mb').forEach(b=>b.onclick=()=>{const k=b.dataset.k;if(k==='pdf')go('#/pdf/'+(LS.get('q_last_pdf',1)||1));else if(k==='load')go('#/load');else if(k==='hifz'||k==='progress'||k==='settings')go('#/'+k);else if(!D)toast('সূরা/পারা সূচি ও শব্দ সার্চ চালাতে ইন্টারনেট দিয়ে একবার ডেটা লোড করুন');else go('#/'+k);});
+}
+function viewPdfPage(p){
+  p=Math.max(1,Math.min(614,p));
+  LS.set('q_last_pdf',p);
+  setBar('মূল PDF · পৃষ্ঠা '+p+' / 614');
+  $('#view').classList.remove('paper');
+  $('#view').innerHTML=`<div class="pdfview"><img id="pdfscan" class="pdfscan" src="pages/${String(p).padStart(3,'0')}.webp" alt="মূল হাফিজি কোরআন PDF পৃষ্ঠা ${p}" loading="eager"><div class="pdfhint">মূল PDF-এর স্ক্যান করা পৃষ্ঠা · বড় করে দেখতে ছবিতে চাপ দিন</div><div class="pdfactions"><button id="pdfbookmark">${PDFBM.includes(p)?'★ বুকমার্ক করা আছে':'☆ এই পৃষ্ঠা বুকমার্ক করুন'}</button><button id="pdfallbookmarks">বুকমার্কগুলো দেখুন (${PDFBM.length})</button></div></div>`;
+  const img=$('#pdfscan');img.onclick=()=>img.classList.toggle('zoomed');
+  $('#pdfbookmark').onclick=()=>{if(PDFBM.includes(p))PDFBM=PDFBM.filter(n=>n!==p);else PDFBM.unshift(p);PDFBM=[...new Set(PDFBM)].sort((a,b)=>a-b);savePDFBM();$('#pdfbookmark').textContent=PDFBM.includes(p)?'★ বুকমার্ক করা আছে':'☆ এই পৃষ্ঠা বুকমার্ক করুন';$('#pdfallbookmarks').textContent=`বুকমার্কগুলো দেখুন (${PDFBM.length})`;toast(PDFBM.includes(p)?'পৃষ্ঠা বুকমার্ক করা হয়েছে':'বুকমার্ক সরানো হয়েছে');};
+  $('#pdfallbookmarks').onclick=()=>go('#/bookmarks');
+  const foot=document.createElement('div');foot.id='pdffoot';foot.className='pdffoot';
+  foot.innerHTML=`<button id="pdfprev" ${p===1?'disabled':''}>‹ আগের</button><span><input id="pdfnum" type="number" min="1" max="614" value="${p}"> / 614</span><button id="pdfnext" ${p===614?'disabled':''}>পরের ›</button>`;
+  $('#app').appendChild(foot);
+  $('#pdfprev').onclick=()=>{if(p>1)go('#/pdf/'+(p-1),true)};
+  $('#pdfnext').onclick=()=>{if(p<614)go('#/pdf/'+(p+1),true)};
+  const jump=()=>{const n=parseInt($('#pdfnum').value);if(n>=1&&n<=614)go('#/pdf/'+n,true);else toast('পৃষ্ঠা ১ থেকে ৬১৪-এর মধ্যে দিন');};
+  $('#pdfnum').onchange=jump;$('#pdfnum').onkeydown=e=>{if(e.key==='Enter')jump()};
+}
+async function enableTextFeatures(){
+  if(D){go('#/');return;}
+  await downloadAll();
+  if(D){route();toast('সূরা/পারা সূচি ও সার্চ প্রস্তুত');}
 }
 function viewSurah(){
   setBar('Surah');
@@ -391,7 +444,7 @@ function viewPage(p,focus,hlParam){
   const hafezi=S.style!=='simple'&&!tr;
   $('#view').classList.toggle('paper',hafezi);
   let h;
-  if(p===1){$('#view').classList.remove('paper');h=`<div class="hf" style="text-align:center"><div class="hf-frame" style="padding:40px 12px"><div class="ar" style="font-size:34px;line-height:1.8">القرآن الكريم</div><div class="ar" style="font-size:22px;margin-top:20px">نورانی حافظی قرآن شریف</div><div style="margin-top:28px;opacity:.7">611 pages · 15 lines</div><div style="margin-top:20px;opacity:.7">&#8592; swipe / tap &#8250; to start</div></div></div>`;}
+  if(p===1){$('#view').classList.remove('paper');h=`<div class="hf" style="text-align:center"><div class="hf-frame" style="padding:40px 12px"><div class="ar" style="font-size:34px;line-height:1.8">القرآن الكريم</div><div class="ar" style="font-size:22px;margin-top:20px">نورانی حافظی قرآن شریف</div><div style="margin-top:28px;opacity:.7">৬১৪ পৃষ্ঠার মূল PDF · ১৫ লাইনের হাফিজি কোরআন</div><div style="margin-top:20px;opacity:.7">&#8592; swipe / tap &#8250; to start</div></div></div>`;}
   else if(hafezi){h=hafeziHTML(p,s,e);}else{
   h=`<div id="pg" class="ar" style="font-size:${S.font}px"><div class="${tr?'':'pgtxt'}">`;
   for(let i=s;i<e;i++){
@@ -502,10 +555,13 @@ window.addEventListener('resize',()=>{if($('.hf'))fitHafezi();});
 function refText(i){const m=D.meta[D.sn[i]-1];return `${m.en} ${D.sn[i]}:${D.an[i]}`;}
 function viewBookmarks(){
   setBar('Bookmarks');
-  if(!BM.length){$('#view').innerHTML='<div class="empty">কোনো বুকমার্ক নেই।<br>পড়ার সময় যেকোনো আয়াতে ট্যাপ করে বুকমার্ক করুন।</div>';return;}
-  $('#view').innerHTML=BM.map((i,k)=>`<div class="row" data-i="${i}"><div class="mid"><div class="t">${esc(refText(i))} <span class="r">· Page ${D.pg[i]}</span></div><div class="s ar" style="direction:rtl;text-align:right;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(D.ar[i])}</div></div><button class="x" data-k="${k}">&#10005;</button></div>`).join('');
-  $('#view').querySelectorAll('.row').forEach(r=>r.onclick=e=>{if(e.target.classList.contains('x'))return;const i=+r.dataset.i;go(`#/page/${D.pg[i]}?a=${i}`);});
-  $('#view').querySelectorAll('.x').forEach(b=>b.onclick=()=>{BM.splice(+b.dataset.k,1);saveBM();viewBookmarks();});
+  const pdfRows=PDFBM.map((p,k)=>`<div class="row" data-pdf-page="${p}"><div class="mid"><div class="t">মূল হাফিজি কোরআন · PDF পৃষ্ঠা ${p}</div><div class="s">আপনার দেওয়া PDF-এর আসল স্ক্যান</div></div><button class="x" data-pdf-k="${k}">&#10005;</button></div>`).join('');
+  const ayahRows=D?BM.map((i,k)=>`<div class="row" data-i="${i}"><div class="mid"><div class="t">${esc(refText(i))} <span class="r">· Page ${D.pg[i]}</span></div><div class="s ar" style="direction:rtl;text-align:right;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(D.ar[i])}</div></div><button class="x" data-k="${k}">&#10005;</button></div>`).join(''):'';
+  if(!pdfRows&&!ayahRows){$('#view').innerHTML='<div class="empty">কোনো বুকমার্ক নেই। কোরআনের পৃষ্ঠা খুলে “এই পৃষ্ঠা বুকমার্ক করুন” চাপুন।</div>';return;}
+  $('#view').innerHTML=(pdfRows?'<div class="card"><h3>মূল PDF পৃষ্ঠা</h3>'+pdfRows+'</div>':'')+(ayahRows?'<div class="card"><h3>আয়াত বুকমার্ক</h3>'+ayahRows+'</div>':'')+(!D&&BM.length?'<div class="pdfhint">আয়াতের বুকমার্ক দেখতে অনলাইনে সূচি/টেক্সট লোড করতে হবে।</div>':'');
+  $('#view').querySelectorAll('[data-pdf-page]').forEach(r=>r.onclick=e=>{if(e.target.classList.contains('x'))return;go('#/pdf/'+(+r.dataset.pdfPage));});
+  $('#view').querySelectorAll('[data-pdf-k]').forEach(b=>b.onclick=()=>{PDFBM.splice(+b.dataset.pdfK,1);savePDFBM();viewBookmarks();});
+  if(D){$('#view').querySelectorAll('[data-i]').forEach(r=>r.onclick=e=>{if(e.target.classList.contains('x'))return;const i=+r.dataset.i;go(`#/page/${D.pg[i]}?a=${i}`);});$('#view').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{BM.splice(+b.dataset.k,1);saveBM();viewBookmarks();});}
 }
 /* ---- sheet ---- */
 function closeSheet(){$('#sheet').style.display='none';$('#sheetbg').style.display='none';}
@@ -622,24 +678,73 @@ function showMore(){
   if($('#mb2'))$('#mb2').onclick=showMore;
 }
 
+/* ================= offline hifz practice & progress ================= */
+function todayKey(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function getHifz(){return LS.get('q_hifz_v1',{day:todayKey(),sabak:0,amukhta:0,sat:0,goal:5,completed:[],sessions:0});}
+function saveHifz(x){LS.set('q_hifz_v1',x);}
+function normalizedHifz(){let x=getHifz();if(x.day!==todayKey()){x.day=todayKey();x.sabak=0;x.amukhta=0;x.sat=0;}if(!Array.isArray(x.completed))x.completed=[];return x;}
+function viewHifz(){
+  setBar('Hifz Practice');const x=normalizedHifz();saveHifz(x);const pg=LS.get('q_last_pdf',1)||1;
+  $('#view').innerHTML=`<div class="hifzwrap"><div class="hifzhero"><h2>হিফজ অনুশীলন</h2><p>মূল PDF-এর পৃষ্ঠা ব্যবহার করে সবক, আমুখতা ও সাত সবকের তকরার গণনা করুন। অগ্রগতি এই ফোনেই সংরক্ষিত হবে।</p></div>
+  <label class="small" for="hp">কোরআনের পৃষ্ঠা (১–৬১৪)</label><input class="hifzinput" id="hp" type="number" min="1" max="614" value="${pg}" inputmode="numeric">
+  <button class="hifzbtn primary" id="openhp">এই পৃষ্ঠা খুলুন</button>
+  <div class="hifzscanbox"><img id="hifzimg" src="pages/${String(pg).padStart(3,'0')}.webp" alt="কোরআন পৃষ্ঠা ${pg}"><div id="hifzcover" class="hifzcover" style="display:none">মুখস্থ পরীক্ষা<br><small>নিচের “পৃষ্ঠা দেখুন” চাপুন</small></div></div>
+  <button class="hifzbtn" id="hidepage">মুখস্থ পরীক্ষা · পৃষ্ঠা লুকান</button><button class="hifzbtn" id="revealpage" style="display:none">পৃষ্ঠা দেখুন</button>
+  <div class="hifzgrid"><div class="hifzstat"><b id="cs">${x.sabak}</b><span>আজকের সবক তকরার</span></div><div class="hifzstat"><b id="ca">${x.amukhta}</b><span>আজকের আমুখতা তকরার</span></div><div class="hifzstat"><b id="ct">${x.sat}</b><span>আজকের সাত সবক তকরার</span></div><div class="hifzstat"><b>${x.completed.length}</b><span>সম্পন্ন চিহ্নিত পৃষ্ঠা</span></div></div>
+  <button class="hifzbtn" id="adds">＋ সবক তকরার +১</button><button class="hifzbtn" id="adda">＋ আমুখতা তকরার +১</button><button class="hifzbtn" id="addt">＋ সাত সবক তকরার +১</button><button class="hifzbtn primary" id="markdone">✓ এই পৃষ্ঠা আজ পড়া হয়েছে</button>
+  <p class="hifzsmall">নোট: কাউন্টারগুলো শুধু আপনার অনুশীলনের হিসাব রাখে; এগুলো স্বয়ংক্রিয়ভাবে কোরআনের পৃষ্ঠা বা আয়াত শনাক্ত করে না। পৃষ্ঠা নম্বর মূল PDF-এর স্ক্যানের নম্বর।</p></div>`;
+  const saveCount=(key,id)=>{let z=normalizedHifz();z[key]=(z[key]||0)+1;saveHifz(z);$('#'+id).textContent=z[key];};
+  $('#openhp').onclick=()=>{const n=parseInt($('#hp').value);if(!n||n<1||n>614){toast('পৃষ্ঠা ১ থেকে ৬১৪-এর মধ্যে দিন');return;}LS.set('q_last_pdf',n);go('#/pdf/'+n);};
+  $('#hidepage').onclick=()=>{$('#hifzcover').style.display='flex';$('#hifzimg').style.filter='blur(12px)';$('#hidepage').style.display='none';$('#revealpage').style.display='block';};
+  $('#revealpage').onclick=()=>{$('#hifzcover').style.display='none';$('#hifzimg').style.filter='none';$('#hidepage').style.display='block';$('#revealpage').style.display='none';};
+  $('#adds').onclick=()=>saveCount('sabak','cs');$('#adda').onclick=()=>saveCount('amukhta','ca');$('#addt').onclick=()=>saveCount('sat','ct');
+  $('#markdone').onclick=()=>{const n=parseInt($('#hp').value);if(!n||n<1||n>614){toast('পৃষ্ঠা ১ থেকে ৬১৪-এর মধ্যে দিন');return;}let z=normalizedHifz();if(!z.completed.includes(n))z.completed.push(n);z.sessions=(z.sessions||0)+1;saveHifz(z);toast('আজকের অনুশীলনে পৃষ্ঠা চিহ্নিত হয়েছে');viewHifz();};
+}
+function viewProgress(){
+  setBar('Progress & Daily Goal');const x=normalizedHifz();saveHifz(x);const total=Math.min(614,x.completed.length);const pct=Math.round(total/614*100);
+  $('#view').innerHTML=`<div class="hifzwrap"><div class="hifzhero"><h2>আপনার হিফজ অগ্রগতি</h2><p>এই হিসাব শুধু এই ডিভাইসের লোকাল স্টোরেজে রাখা হয়।</p></div>
+  <div class="card"><h3>আজকের লক্ষ্য</h3><label for="goal">প্রতিদিনের তকরার লক্ষ্য (মোট)</label><input class="hifzinput" id="goal" type="number" min="1" max="500" value="${x.goal||5}"><button class="hifzbtn primary" id="savegoal">লক্ষ্য সংরক্ষণ</button><div class="hifzgrid"><div class="hifzstat"><b>${x.sabak+x.amukhta+x.sat}</b><span>আজকের মোট তকরার</span></div><div class="hifzstat"><b>${x.goal||5}</b><span>দৈনিক লক্ষ্য</span></div><div class="hifzstat"><b>${total}</b><span>চিহ্নিত পৃষ্ঠা</span></div><div class="hifzstat"><b>${pct}%</b><span>৬১৪ পৃষ্ঠার মধ্যে</span></div></div><div class="hifzsmall">${x.sabak+x.amukhta+x.sat >= (x.goal||5)?'আলহামদুলিল্লাহ, আজকের তকরার লক্ষ্য পূরণ হয়েছে।':'আজকের লক্ষ্য পূরণে আরও '+Math.max(0,(x.goal||5)-(x.sabak+x.amukhta+x.sat))+' বার তকরার বাকি।'}</div></div>
+  <div class="card"><h3>আজকের বিভাগভিত্তিক হিসাব</h3><div class="line2"><span>সবক</span><b>${x.sabak}</b></div><div class="line2"><span>আমুখতা</span><b>${x.amukhta}</b></div><div class="line2"><span>সাত সবক</span><b>${x.sat}</b></div><div class="line2"><span>আজকের তারিখ</span><b>${x.day}</b></div></div>
+  <div class="card"><h3>সম্পন্ন চিহ্নিত পৃষ্ঠা</h3><p class="hifzsmall">${x.completed.length?x.completed.slice().sort((a,b)=>a-b).join(' · '):'এখনো কোনো পৃষ্ঠা চিহ্নিত করা হয়নি।'}</p><button class="hifzbtn" id="resetday">আজকের কাউন্টার শূন্য করুন</button></div></div>`;
+  $('#savegoal').onclick=()=>{const n=parseInt($('#goal').value);if(!n||n<1||n>500){toast('লক্ষ্য ১ থেকে ৫০০-এর মধ্যে দিন');return;}let z=normalizedHifz();z.goal=n;saveHifz(z);viewProgress();toast('দৈনিক লক্ষ্য সংরক্ষণ হয়েছে');};
+  $('#resetday').onclick=()=>{if(!confirm('আজকের তকরার কাউন্টার শূন্য করবেন? সম্পন্ন পৃষ্ঠাগুলো থাকবে।'))return;let z=normalizedHifz();z.sabak=0;z.amukhta=0;z.sat=0;saveHifz(z);viewProgress();};
+}
+
+/* Download the complete scanned PDF image set for offline use on this device. */
+async function cacheAllPdfPages(){
+  if(!('caches' in window) || !('serviceWorker' in navigator)){toast('এই ব্রাউজারে অফলাইন ক্যাশিং সমর্থিত নয়। GitHub Pages HTTPS দিয়ে খুলুন।');return;}
+  const btn=$('#cachepages'),status=$('#cacheprogress');if(!btn||!status)return;
+  btn.disabled=true;btn.textContent='সংরক্ষণ হচ্ছে…';
+  try{
+    const cache=await caches.open('quran-app-pages-v3');let done=0;const total=614;status.textContent='শুরু হচ্ছে…';
+    for(let start=1;start<=total;start+=6){
+      const batch=[];for(let n=start;n<Math.min(start+6,total+1);n++)batch.push(n);
+      await Promise.all(batch.map(async n=>{const url=`pages/${String(n).padStart(3,'0')}.webp`;const req=new Request(new URL(url,location.href));let res=await cache.match(req);if(!res){res=await fetch(req);if(!res.ok)throw new Error('পৃষ্ঠা '+n+' ডাউনলোড হয়নি');await cache.put(req,res.clone());}done++;}));
+      status.textContent=`${done}/${total} পৃষ্ঠা অফলাইনে সংরক্ষিত`;
+    }
+    status.textContent='সম্পন্ন! ৬১৪টি পৃষ্ঠাই অফলাইনে সংরক্ষিত হয়েছে।';toast('সব পৃষ্ঠা অফলাইনে সংরক্ষিত হয়েছে');
+  }catch(e){status.textContent='সংরক্ষণ সম্পূর্ণ হয়নি: '+(e.message||e)+'। ইন্টারনেট/স্টোরেজ পরীক্ষা করে আবার চেষ্টা করুন।';}
+  finally{btn.disabled=false;btn.textContent='৬১৪ পৃষ্ঠা অফলাইনে সংরক্ষণ করুন';}
+}
+
 /* ================= settings ================= */
 function viewSettings(){
   setBar('Settings');
   $('#view').innerHTML=`<div class="set">
-  <div class="card"><h3>App version</h3><div style="font-size:13px;opacity:.7">Text rules v12 · 2026-10-25</div></div>
   <div class="card"><h3>Font size (Simple স্টাইল)</h3><div class="prev ar" id="pv2" style="font-size:${S.font}px">${BISM}</div><input type="range" id="fs" min="20" max="52" value="${S.font}"></div>
   <div class="card"><h3>Reading style</h3><div class="chips" style="margin:0"><span class="chip ${S.style!=='simple'?'on':''}" id="st1">Hafezi (১৫ লাইন, তারা-নকশা)</span><span class="chip ${S.style==='simple'?'on':''}" id="st2">Simple</span></div><div class="small" style="margin-top:8px">Hafezi স্টাইলে লেখার সাইজ নিজে থেকেই পেজে ফিট হয়। অনুবাদ চালু থাকলে পেজ Simple স্টাইলে দেখাবে।</div></div>
   <div class="card"><h3>Theme</h3><div class="line2"><span>Light mode</span><label class="sw"><input type="checkbox" id="th" ${S.theme==='light'?'checked':''}><i></i></label></div></div>
   <div class="card"><h3>বাংলা অনুবাদ</h3><div class="line2"><span>পড়ার পাতা ও সার্চে অনুবাদ দেখান</span><label class="sw"><input type="checkbox" id="tr" ${S.showTr?'checked':''}><i></i></label></div><div class="small">প্রথমবার চালু করলে অনুবাদ ডাউনলোড হবে (ইন্টারনেট লাগবে)। চালু থাকলে বাংলা শব্দ দিয়েও সার্চ করা যায়।</div></div>
-  <div class="card"><h3>Data</h3><div class="line2"><span class="small">কোরআনের ডেটা আবার ডাউনলোড করুন</span><button class="btn2" id="rd">Re-download</button></div><div class="line2"><span class="small">সব বুকমার্ক মুছুন (${BM.length}টি)</span><button class="btn2 red" id="cb">Clear</button></div></div>
-  <div class="card"><h3>About</h3><div class="small">কোরআনের টেক্সট: Tanzil Project (tanzil.net), AlQuran Cloud API-এর মাধ্যমে। বাংলা অনুবাদ: মুহিউদ্দীন খান। পৃষ্ঠা নম্বর মদিনা মুসহাফ (৬০৪ পৃষ্ঠা) অনুযায়ী।</div></div></div>`;
+  <div class="card"><h3>অফলাইন ও বুকমার্ক</h3><button class="hifzbtn primary" id="cachepages">৬১৪ পৃষ্ঠা অফলাইনে সংরক্ষণ করুন</button><div id="cacheprogress" class="cacheprogress">একবার ইন্টারনেট দিয়ে চালিয়ে নিলে পৃষ্ঠাগুলো অফলাইনে দেখা যাবে। প্রায় ৪৫ MB স্টোরেজ লাগতে পারে।</div><div class="line2"><span class="small">সব বুকমার্ক মুছুন (PDF ${PDFBM.length}টি, আয়াত ${BM.length}টি)</span><button class="btn2 red" id="cb">Clear</button></div><div class="line2"><span class="small">অনলাইন সূচি/সার্চের ডেটা আবার ডাউনলোড করুন</span><button class="btn2" id="rd">Re-download</button></div></div>
+  <div class="card"><h3>About</h3><div class="small">কোরআনের টেক্সট: Tanzil Project (tanzil.net), AlQuran Cloud API-এর মাধ্যমে। বাংলা অনুবাদ: মুহিউদ্দীন খান। মূল PDF পাঠ: ব্যবহারকারীর দেওয়া ৬১৪ পৃষ্ঠার এমদাদিয়া হাফিজি কোরআনের স্ক্যান। অনলাইন টেক্সট মোডের পৃষ্ঠা-সূচি এখনও মূল PDF-এর সঙ্গে সম্পূর্ণ যাচাই করা হয়নি।</div></div></div>`;
   $('#fs').oninput=e=>{S.font=+e.target.value;$('#pv2').style.fontSize=S.font+'px';saveS();};
   $('#st1').onclick=()=>{S.style='hafezi';saveS();$('#st1').classList.add('on');$('#st2').classList.remove('on');};
   $('#st2').onclick=()=>{S.style='simple';saveS();$('#st2').classList.add('on');$('#st1').classList.remove('on');};
   $('#th').onchange=e=>{S.theme=e.target.checked?'light':'dark';saveS();applyTheme();};
   $('#tr').onchange=async e=>{
     if(e.target.checked){const ok=await loadTranslation();if(!ok){e.target.checked=false;S.showTr=false;saveS();return;}S.showTr=true;}else S.showTr=false;saveS();};
-  $('#cb').onclick=()=>{if(!BM.length)return;if(confirm('সব বুকমার্ক মুছে ফেলবেন?')){BM=[];saveBM();viewSettings();toast('মুছে ফেলা হয়েছে');}};
+  $('#cachepages').onclick=cacheAllPdfPages;
+  $('#cb').onclick=()=>{if(!BM.length&&!PDFBM.length)return;if(confirm('সব PDF ও আয়াত বুকমার্ক মুছে ফেলবেন?')){BM=[];PDFBM=[];saveBM();savePDFBM();viewSettings();toast('সব বুকমার্ক মুছে ফেলা হয়েছে');}};
   $('#rd').onclick=async()=>{if(!confirm('ডেটা আবার ডাউনলোড করবেন? (ইন্টারনেট লাগবে)'))return;
     try{await idbDel('quran_v2');await idbDel('tr_bn');}catch(e){}
     D=null;await downloadAll();if(S.showTr)await loadTranslation(true);location.hash='#/';route();};
@@ -651,9 +756,10 @@ async function init(){
   const t0=Date.now();
   $('#view').innerHTML=`<div class="center splash"><div class="orn"><div class="big ar">القرآن<br>الكريم</div></div><div class="spin"></div></div>`;
   try{const d=await tmo(idbGet('quran_v2'),4000);if(d&&d.v===2&&d.ar&&d.ar.length>6000){D=d;index();}}catch(e){console.warn('idb read failed',e);}
-  if(D){const w=900-(Date.now()-t0);if(w>0)await new Promise(r=>setTimeout(r,w));}
-  else await downloadAll();
-  if(S.showTr){const ok=await loadTranslation();if(!ok){S.showTr=false;saveS();}}
+  if(D){const w=400-(Date.now()-t0);if(w>0)await new Promise(r=>setTimeout(r,w));}
+  // The exact scanned PDF pages are bundled locally and must work without internet.
+  // Online Quran text/index/search features are optional and load only when requested.
+  if(D&&S.showTr){const ok=await loadTranslation();if(!ok){S.showTr=false;saveS();}}
   route();
 }
 try{if('serviceWorker' in navigator&&location.protocol==='https:'&&location.host!=='appassets.androidplatform.net')navigator.serviceWorker.register('sw.js').catch(()=>{});}catch(e){}

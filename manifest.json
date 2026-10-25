@@ -1,0 +1,20 @@
+{
+  "id": "./",
+  "name": "হাফিজি কোরআন শরীফ — হিফজ অনুশীলন",
+  "short_name": "হাফিজি কোরআন",
+  "lang": "bn",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f2e7",
+  "theme_color": "#303f9f",
+  "description": "ব্যবহারকারীর দেওয়া ৬১৪ পৃষ্ঠার এমদাদিয়া হাফিজি কোরআন স্ক্যান ও হিফজ অনুশীলন।",
+  "icons": [
+    {
+      "src": "quran-app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
